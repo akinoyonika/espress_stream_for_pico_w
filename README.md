@@ -3,17 +3,14 @@
 ## 概要
 
 [espress_stream](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/)の[Raspberry Pi Pico W](https://www.raspberrypi.com/products/raspberry-pi-pico/)(以降Pico W)上への移植を行いました。
-espress_streamの実装はlinux上で行われていますが、組み込み機器における利用を配慮した設計になっています。
-このため、変更は最小限に抑えられています。
+linux用とは以下のような違いがあります。
 
-変更点を以下に示します。
-
-1. シングルスレッド動作、スレッド未使用化(シングルスレッド動作への対応コードはすでに内蔵しているので、設定変更のみで対応)。
-2. リソース固定、ヒープ未使用化(リソース固定への対応コードはすでに内蔵しているので、最大インターフェイス数、最大セッション数の設定のみで対応)。
-3. 最大整数値ビット幅、エンディアン、バイトスワップ等の基本依存部。
-4. データグラム通信部。
-5. ティック生成部。
-6. 乱数生成部。
+- シングルタスク、スレッド未使用。
+- リソース固定、ヒープ未使用。
+- 排他制御、同期機構関連部のダミー実装による無効化もしくは疑似動作化。
+- lwIPによるデータグラム通信部。
+- SDKのライブラリーによるティック生成部。
+- ティックを利用した動作確認用の乱数生成部。
 
 その他、小リソース向けに設定値を変更しています。
 
@@ -24,9 +21,13 @@ OSは未使用(ベア環境)です。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20231231.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20231231.tar.gz)
+- [espress_stream_for_pico_w.20240101.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240101.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20240101.tar.gz (0.9-0)
+: - 設定値の一部が実験用の値のままになっていたので元の値に修正。
+ - ドキュメントの修正。
 
 espress_stream_for_pico_w.20231231.tar.gz (0.9-0)
 : - 初版。
@@ -113,6 +114,7 @@ linuxにてサーバーアプリケーション<tt>es_frx</tt>を起動、ファ
 ### espress_stream使用アプリケーション作成
 
 <tt>espress_stream</tt>ディレクトリ以下をディレクトリごとRaspberry Pi Pico C/C++ SDKを用いたアプリケーション作成環境にコピーしてください。
+
 <tt>CMakeLists.txt</tt>に設定を追加します。
 
 include_directories
@@ -123,6 +125,8 @@ add_executable
 
 target_link_libraries
 : <tt>pico_stdlib</tt>、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をライブラリーに追加。
+
+UDPを使うため、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をライブラリーに追加し、lwIPを導入しています。lwIPはオプションをlwipopts.hに設定します。これを作成し、いずれかのインクルードパスにおいてください。詳細は[pico-examplesの<tt>pico_w/wifi/lwipopts_examples_common.h</tt>](https://github.com/raspberrypi/pico-examples/blob/master/pico_w/wifi/lwipopts_examples_common.h)を参照してください。
 
 アプリケーションからespress_streamを利用するためのAPIはlinux用ライブラリーと同じです。
 詳細は「[linux用のライブラリー使用方法](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/#%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E3%83%BC-libespress_stream.so)」を参照してください。
