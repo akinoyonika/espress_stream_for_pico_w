@@ -21,9 +21,12 @@ OSは未使用(ベア環境)です。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20240101.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240101.tar.gz)
+- [espress_stream_for_pico_w.20240108.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240108.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20240108.tar.gz (0.9-0)
+: - ドキュメントの修正。
 
 espress_stream_for_pico_w.20240101.tar.gz (0.9-0)
 : - 設定値の一部が実験用の値のままになっていたので元の値に修正。
@@ -38,7 +41,7 @@ espress_stream_for_pico_w.20231231.tar.gz (0.9-0)
 
 ### 準備
 
-本ソフトウェアはRaspberry Pi Pico C/C++ SDKを用いてソースコードから作成したものをPico Wに導入することになります。
+本ソフトウェアはRaspberry Pi Pico C/C++ SDKを用いてソースコードから作成します。
 SDKの導入、ソフトウェア作成方法、SDKを用いて作成したソフトウェアのPico Wへの導入等の方法は[SDKのドキュメント](https://datasheets.raspberrypi.com/picow/connecting-to-the-internet-with-pico-w.pdf)を参照してください。
 
 SDKを導入されているディレクトリ<tt>pico-sdk</tt>が存在するディレクトリでパッケージの解凍を行っておきます。
@@ -47,7 +50,7 @@ SDKを導入されているディレクトリ<tt>pico-sdk</tt>が存在するデ
 $ tar zxvf espress_stream_for_pico_w.########.tar.gz
 ```
 
-パッケージには移植されたespress_streamにサンプルアプリケーションが含まれています。
+パッケージには移植されたespress_streamとサンプルアプリケーションが含まれています。
 サンプルアプリケーションは[linux用の<tt>es_ftx</tt>](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3-es_ftx-es_frx)を移植したものです。
 <tt>es_ftx</tt>はクライアントアプリケーションで、サーバーアプリケーション<tt>es_frx</tt>に対してファイルを送信する機能を持ちます。
 移植された<tt>es_ftx</tt>は<tt>test.dat</tt>というファイル名で1MBのダミーデータを送信するように作られています。
@@ -117,14 +120,19 @@ linuxにてサーバーアプリケーション<tt>es_frx</tt>を起動、ファ
 
 <tt>CMakeLists.txt</tt>に設定を追加します。
 
-include_directories
+<tt>include_directories</tt>
 : <tt>espress_stream/include</tt>、<tt>espress_stream/api/include</tt>をインクルードパスに追加。
 
-add_executable
+<tt>add_executable</tt>
 : <tt>espress_stream/src/\*.c</tt>、<tt>espress_stream/api/src/\*.c</tt>をソースに追加。
 
-target_link_libraries
+<tt>target_link_libraries</tt>
 : <tt>pico_stdlib</tt>、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をライブラリーに追加。
+
+<tt>target_compile_definitions</tt>
+: <tt>ESPRESS_STREAM_MAJOR_VERSION=#</tt>、<tt>ESPRESS_STREAM_MINOR_VERSION=#</tt>、<tt>ESPRESS_STREAM_PROTOCOL_VERSION=#</tt>を定義に追加。
+"<tt>#</tt>"の部分は実際には数字です。
+パッケージの<tt>CMakeLists.txt</tt>にある同設定のものに合わせてください。
 
 UDPを使うため、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をライブラリーに追加し、lwIPを導入しています。lwIPはオプションをlwipopts.hに設定します。これを作成し、いずれかのインクルードパスにおいてください。詳細は[pico-examplesの<tt>pico_w/wifi/lwipopts_examples_common.h</tt>](https://github.com/raspberrypi/pico-examples/blob/master/pico_w/wifi/lwipopts_examples_common.h)を参照してください。
 
