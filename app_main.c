@@ -430,7 +430,7 @@ static int send_recv(struct file_tx_attr *attr,
 
 	for (i = -1, j = -1, t = timeout ; *is_running && (i == -1) && (j == -1) ; ) {
 		t = timeout - t;
-		espress_stream_wait_any(sid, t);
+		espress_stream_wait_any(sid, ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV, t);
 		i = espress_stream_send(sid, send_data, send_data_size, 0);
 		j = espress_stream_recv(sid, recv_data, recv_data_size, 0);
 
@@ -456,7 +456,7 @@ static int flush_recv(struct file_tx_attr *attr,
 
 	for (i = -1, j = -1, t = timeout ; *is_running && (i == -1) && (j == -1) ; ) {
 		t = timeout - t;
-		espress_stream_wait_any(sid, t);
+		espress_stream_wait_any(sid, ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV, t);
 		i = espress_stream_flush(sid, 0);
 		j = espress_stream_recv(sid, recv_data, recv_data_size, 0);
 
@@ -647,7 +647,7 @@ static void *file_tx(void *param)
 
 		if ((t = (espress_stream_time() - start_time) & 0xffffffff) < TIMEOUT) {
 			t = TIMEOUT - t;
-			espress_stream_wait_any(*sid, *is_running ? t : 0);
+			espress_stream_wait_any(*sid, ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV, *is_running ? t : 0);
 		} else {
 			break;
 		}

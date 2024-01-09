@@ -82,6 +82,12 @@
 #define ESPRESS_STREAM_SESSION_HASH_SIZE (32)
 #define ESPRESS_STREAM_MAX_NUM_POLL_SESSION (ESPRESS_STREAM_MAX_NUM_SESSION)
 
+#define ESPRESS_STREAM_EVENT_CONNECT_RESULT (1 << 0)
+#define ESPRESS_STREAM_EVENT_CONNECT_DETECT (1 << 1)
+#define ESPRESS_STREAM_EVENT_DISCONNECT_RESULT (1 << 2)
+#define ESPRESS_STREAM_EVENT_SEND (1 << 3)
+#define ESPRESS_STREAM_EVENT_RECV (1 << 4)
+
 struct espress_stream_session_ex_param {
 	int (*send_connect_payload)(void *sid, int (*callback)(void *sid, void const *payload, unsigned payload_size, int is_rejected), void *param);
 	void *send_connect_payload_param;
@@ -331,9 +337,22 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
  * To confirm which function is able to get result, see return value of each function called with zero timeout.
  * When this function finish in success, but none function may be able to get result.
  * In this case, repeat call this function.
+ * You are able to choose event types which relate the function to wait for result.
+ * 
+ * | Event types                              | Functions                                 |
+ * |------------------------------------------|-------------------------------------------|
+ * | ESPRESS_STREAM_EVENT_CONNECT_RESULT      | espress_stream_connect_result             |
+ * | ESPRESS_STREAM_EVENT_CONNECT_DETECT      | espress_stream_connect_detect             |
+ * | ESPRESS_STREAM_EVENT_DISCONNECT_RESULT   | espress_stream_disconnect_result          |
+ * | ESPRESS_STREAM_EVENT_SEND                | espress_stream_send, espress_stream_flush |
+ * | ESPRESS_STREAM_EVENT_RECV                | espress_stream_recv                       |
+ * 
+ * One or more event types are selectable. Set concated event types with "|" to the event parameter.
  * 
  * @param[in] sid
  *     Session ID.
+ * @param[in] event
+ *     Event types.
  * @param[in] timeout
  *     Timeout value. It's only lower 32 bits are available. The unit is microsecond.
  * 
@@ -342,7 +361,7 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
  *     == -1: Waiting for event yet.
  *     > 0  : Failure.
  */
-int espress_stream_wait_any(void *sid, unsigned timeout);
+int espress_stream_wait_any(void *sid, unsigned event, unsigned timeout);
 
 /** @brief Break to waiting function
  * 
@@ -356,12 +375,14 @@ void espress_stream_wait_break(void *sid);
 
 /** @brief Polling multiple session.
  * 
- * Detect that any espress_stream_wait_any function result will be success or failure at least one.
+ * Detect that any espress_stream_wait_any function result for one or more sids will be success or failure at least one.
  * 
  * @param[in] sids
  *     Session IDs array.
+ * @param[in] events
+ *     Event types array.
  * @param[in] num
- *     Number of sids items.
+ *     Number of sids and events items.
  * @param[in] timeout
  *     Timeout value. It's only lower 32 bits are available. The unit is microsecond.
  * 
@@ -369,7 +390,7 @@ void espress_stream_wait_break(void *sid);
  *     >= 0 : Number of detected sids. (Zero indicates timeout.)
  *     == -1: Failure.
  */
-int espress_stream_poll(void * const *sids, unsigned num, unsigned timeout);
+int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num, unsigned timeout);
 
 /** @brief Get source address.
  * 

@@ -40,6 +40,7 @@ static void test_main()
 	void *client_sid;
 	void *server_sid;
 	void *sids[2];
+	unsigned events[2];
 #	define DATA_SIZE (1 << 12)
 	static unsigned char send_data[DATA_SIZE];
 	static unsigned char recv_data[DATA_SIZE];
@@ -71,14 +72,21 @@ static void test_main()
 
 		sids[0] = client_sid;
 		sids[1] = server_sid;
+		events[0] =
+			ESPRESS_STREAM_EVENT_CONNECT_RESULT |
+			ESPRESS_STREAM_EVENT_CONNECT_DETECT |
+			ESPRESS_STREAM_EVENT_DISCONNECT_RESULT |
+			ESPRESS_STREAM_EVENT_SEND |
+			ESPRESS_STREAM_EVENT_RECV;
+		events[1] = events[0];
 		printf("api: ."); fflush(stdout);
-		i = espress_stream_poll(sids, 2, 1000000);
+		i = espress_stream_poll(sids, events, 2, 1000000);
 		assert(i == 0);
 		printf("."); fflush(stdout);
-		i = espress_stream_poll(sids, 2, 1000000);
+		i = espress_stream_poll(sids, events, 2, 1000000);
 		assert(i == 0);
 		printf("."); fflush(stdout);
-		i = espress_stream_poll(sids, 2, 1000000);
+		i = espress_stream_poll(sids, events, 2, 1000000);
 		assert(i == 0);
 		printf("\n");
 
@@ -90,10 +98,12 @@ static void test_main()
 		assert(k == 0);
 		printf("api: client: connect\n");
 
+		sids[0] = client_sid;
+		sids[1] = server_sid;
+		events[0] = ESPRESS_STREAM_EVENT_CONNECT_RESULT;
+		events[1] = ESPRESS_STREAM_EVENT_CONNECT_DETECT;
 		for (i = -1, j = -1, k = -1, l = -1 ; (i == -1) || (j == -1) ; ) {
-			sids[0] = client_sid;
-			sids[1] = server_sid;
-			m = espress_stream_poll(sids, 2, 0xffffffff);
+			m = espress_stream_poll(sids, events, 2, 0xffffffff);
 			assert(0 < m);
 
 			if (i == -1) {
@@ -101,6 +111,7 @@ static void test_main()
 				assert(i <= 0);
 				if (i == 0) {
 					printf("api: server: connect_detect\n");
+					events[1] = ESPRESS_STREAM_EVENT_RECV;
 				}
 			} else {
 				if (k == -1) {
@@ -111,6 +122,7 @@ static void test_main()
 						printf("api: server: disconnect_detect\n");
 						k = espress_stream_disconnect(server_sid);
 						assert(k == 0);
+						events[1] = ESPRESS_STREAM_EVENT_DISCONNECT_RESULT;
 					} else {
 						k = -1;
 					}
@@ -122,6 +134,7 @@ static void test_main()
 						printf("api: server: listen\n");
 						i = -1;
 						k = -1;
+						events[1] = ESPRESS_STREAM_EVENT_CONNECT_DETECT;
 					}
 				}
 			}
@@ -131,6 +144,7 @@ static void test_main()
 				assert(j <= 0);
 				if (j == 0) {
 					printf("api: client: connect_result\n");
+					events[0] = ESPRESS_STREAM_EVENT_RECV;
 				}
 			} else {
 				if (l == -1) {
@@ -141,6 +155,7 @@ static void test_main()
 						printf("api: client: disconnect_detect\n");
 						l = espress_stream_disconnect(client_sid);
 						assert(l == 0);
+						events[0] = ESPRESS_STREAM_EVENT_DISCONNECT_RESULT;
 					} else {
 						l = -1;
 					}
@@ -154,6 +169,7 @@ static void test_main()
 						printf("api: client: connect\n");
 						j = -1;
 						l = -1;
+						events[0] = ESPRESS_STREAM_EVENT_CONNECT_RESULT;
 					}
 				}
 			}
@@ -184,11 +200,13 @@ static void test_main()
 		printf("api: server: session_hash = "); _dump(server_session_hash, ESPRESS_STREAM_SESSION_HASH_SIZE); printf("\n");
 		assert(0 == memcmp(client_session_hash, server_session_hash, ESPRESS_STREAM_SESSION_HASH_SIZE));
 
+		sids[0] = client_sid;
+		sids[1] = server_sid;
+		events[0] = ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV;
+		events[1] = ESPRESS_STREAM_EVENT_RECV;
 		for (i = -1, j = -1, u = 0, v = 0 ; (i == -1) || (j == -1) ; ) {
 			if (0 < u) {
-				sids[0] = client_sid;
-				sids[1] = server_sid;
-				m = espress_stream_poll(sids, 2, 0xffffffff);
+				m = espress_stream_poll(sids, events, 2, 0xffffffff);
 				assert(0 < m);
 			}
 			if (i == -1) {
@@ -250,10 +268,12 @@ static void test_main()
 		}
 		printf("\n\n\n");
 
+		sids[0] = client_sid;
+		sids[1] = server_sid;
+		events[0] = ESPRESS_STREAM_EVENT_DISCONNECT_RESULT;
+		events[1] = ESPRESS_STREAM_EVENT_DISCONNECT_RESULT;
 		for (i = -1, j = -1 ; (i == -1) || (j == -1) ; ) {
-			sids[0] = client_sid;
-			sids[1] = server_sid;
-			m = espress_stream_poll(sids, 2, 0xffffffff);
+			m = espress_stream_poll(sids, events, 2, 0xffffffff);
 			assert(0 < m);
 
 			if (i == -1) {
