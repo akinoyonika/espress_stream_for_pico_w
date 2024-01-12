@@ -21,9 +21,12 @@ OSは未使用(ベア環境)です。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20240110.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240110.tar.gz)
+- [espress_stream_for_pico_w.20240112.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240112.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20240112.tar.gz (1.1-0)
+: - espress_streamのバージョンアップに対応した。
 
 espress_stream_for_pico_w.20240110.tar.gz (1.0-0)
 : - espress_streamのバージョンアップに対応した。
@@ -85,7 +88,7 @@ $ make espress_stream_app_lwip_background
 
 ```
 #define ADDRESS "192.168.1.2"
-#define PORT "1234"
+#define PORT "12345"
 #define PUBLIC_KEY { \
 	0x73, 0x35, 0xe6, 0x3a, 0x76, 0x21, 0x23, 0xa9, 0x41, 0xa2, 0x5e, 0x5e, 0x53, 0x8d, 0xd4, 0xd2, \
 	0xe4, 0x7d, 0x86, 0x92, 0x80, 0xf8, 0x3a, 0xf7, 0x81, 0x0e, 0x0b, 0x3d, 0xae, 0x80, 0x69, 0xc9 \

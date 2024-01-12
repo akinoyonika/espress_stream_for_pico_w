@@ -1367,40 +1367,35 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 	uint32_set_u(timeout_time, timeout);
 	event_wait(this->event, f, espress_stream_uint32_0);
 	espress_stream_event_flags->compo(this->flags, f);
-	if ((data != NULL) && (data_size != NULL) && (0 < *data_size)) {
-		v = *data_size;
-		ret = local_send(this, data, &v);
-		if ((ret == 0) && (v < *data_size)) {
-			for (this->is_broken = 0 ; ; ) {
-				if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND)) {
-					espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
-					w = *data_size - v;
-					ret = local_send(this, ((b_t *)data) + v, &w);
-					v += w;
-					if ((ret != 0) || (v == *data_size)) {
-						break;
-					}
-				}
-
-				espress_stream_tick->get_us(u);
-				espress_stream_uint32_sub(u, start_time);
-				if (!this->is_broken && espress_stream_uint32_lt(u, timeout_time)) {
-					espress_stream_uint32_assign(t, timeout_time);
-					espress_stream_uint32_sub(t, u);
-				} else {
+	espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
+	v = *data_size;
+	ret = local_send(this, data, &v);
+	if ((ret == 0) && (v < *data_size)) {
+		for (this->is_broken = 0 ; ; ) {
+			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND)) {
+				espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
+				w = *data_size - v;
+				ret = local_send(this, ((b_t *)data) + v, &w);
+				v += w;
+				if ((ret != 0) || (v == *data_size)) {
 					break;
 				}
-
-				espress_stream_mutex->unlock(this->mutex);
-				event_wait(this->event, f, t);
-				espress_stream_mutex->lock(this->mutex);
-				espress_stream_event_flags->compo(this->flags, f);
 			}
+
+			espress_stream_tick->get_us(u);
+			espress_stream_uint32_sub(u, start_time);
+			if (!this->is_broken && espress_stream_uint32_lt(u, timeout_time)) {
+				espress_stream_uint32_assign(t, timeout_time);
+				espress_stream_uint32_sub(t, u);
+			} else {
+				break;
+			}
+
+			espress_stream_mutex->unlock(this->mutex);
+			event_wait(this->event, f, t);
+			espress_stream_mutex->lock(this->mutex);
+			espress_stream_event_flags->compo(this->flags, f);
 		}
-	} else {
-		v = 0;
-		ret = 0;
-		espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
 	}
 
 	if (ret == 0) {
@@ -1451,6 +1446,7 @@ int espress_stream_flush(void *sid, unsigned timeout)
 	uint32_set_u(timeout_time, timeout);
 	event_wait(this->event, f, espress_stream_uint32_0);
 	espress_stream_event_flags->compo(this->flags, f);
+	espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
 	ret = espress_stream_session->flush(this->session);
 	if (ret == 0) {
 		for (this->is_broken = 0 ; (ret = (espress_stream_ring_buffer->is_empty(this->send_ring_buffer) ? 0 : -1)) == -1 ; ) {
@@ -1557,43 +1553,39 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
 	uint32_set_u(timeout_time, timeout);
 	event_wait(this->event, f, espress_stream_uint32_0);
 	espress_stream_event_flags->compo(this->flags, f);
-	if ((data != NULL) && (data_size != NULL) && (0 < *data_size)) {
-		v = *data_size;
-		ret = local_recv(this, data, &v);
-		if ((ret == 0) && (v == 0)) {
-			for (this->is_broken = 0 ; ; ) {
-				if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV)) {
-					espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
-					v = *data_size;
-					ret = local_recv(this, data, &v);
-					if ((ret != 0) || (0 < v)) {
-						break;
-					}
-				} else if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT)) {
-					espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT);
-					*data_size = 0;
-					ret = 0;
-					goto DISCONNECT_DETECT_EXIT;
-				}
-
-				espress_stream_tick->get_us(u);
-				espress_stream_uint32_sub(u, start_time);
-				if (!this->is_broken && espress_stream_uint32_lt(u, timeout_time)) {
-					espress_stream_uint32_assign(t, timeout_time);
-					espress_stream_uint32_sub(t, u);
-				} else {
+	espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
+	v = *data_size;
+	ret = local_recv(this, data, &v);
+	if ((ret == 0) && (v == 0)) {
+		for (this->is_broken = 0 ; ; ) {
+			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV)) {
+				espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
+				v = *data_size;
+				ret = local_recv(this, data, &v);
+				if ((ret != 0) || (0 < v)) {
 					break;
 				}
-
-				espress_stream_mutex->unlock(this->mutex);
-				event_wait(this->event, f, t);
-				espress_stream_mutex->lock(this->mutex);
-				espress_stream_event_flags->compo(this->flags, f);
+			} else if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT)) {
+				espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT);
+				*data_size = 0;
+				ret = 0;
+				goto DISCONNECT_DETECT_EXIT;
 			}
+
+			espress_stream_tick->get_us(u);
+			espress_stream_uint32_sub(u, start_time);
+			if (!this->is_broken && espress_stream_uint32_lt(u, timeout_time)) {
+				espress_stream_uint32_assign(t, timeout_time);
+				espress_stream_uint32_sub(t, u);
+			} else {
+				break;
+			}
+
+			espress_stream_mutex->unlock(this->mutex);
+			event_wait(this->event, f, t);
+			espress_stream_mutex->lock(this->mutex);
+			espress_stream_event_flags->compo(this->flags, f);
 		}
-	} else {
-		v = 0;
-		espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
 	}
 
 	if (0 < v) {

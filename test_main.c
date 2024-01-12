@@ -41,13 +41,13 @@ static void test_main()
 	void *server_sid;
 	void *sids[2];
 	unsigned events[2];
-#	define DATA_SIZE (1 << 12)
+#	define DATA_SIZE (1 << 10)
 	static unsigned char send_data[DATA_SIZE];
 	static unsigned char recv_data[DATA_SIZE];
 	unsigned char client_session_hash[ESPRESS_STREAM_SESSION_HASH_SIZE];
 	unsigned char server_session_hash[ESPRESS_STREAM_SESSION_HASH_SIZE];
 #	define DATA_MASK (DATA_SIZE - 1)
-#	define TEST_DATA_SIZE (1024 * 1024)
+#	define TEST_DATA_SIZE (1024 * DATA_SIZE)
 #	define TEST_NUM_REPEAT (4)
 
 	for (i = 0 ; i < sizeof(send_data) ; i++) {
@@ -220,13 +220,15 @@ static void test_main()
 					assert(i == 0);
 				} else {
 					if (u < TEST_DATA_SIZE) {
-						w = sizeof(send_data) - (u & DATA_MASK);
-						k = espress_stream_send(client_sid, send_data + (u & DATA_MASK), &w, 0);
-						assert(k <= 0);
-						if (k == 0) {
-							assert(0 < w);
-							u += w;
-						}
+						do {
+							w = sizeof(send_data) - (u & DATA_MASK);
+							k = espress_stream_send(client_sid, send_data + (u & DATA_MASK), &w, 0);
+							assert(k <= 0);
+							if (k == 0) {
+								assert(0 < w);
+								u += w;
+							}
+						} while ((k == 0) && (u < TEST_DATA_SIZE));
 					}
 					if (u == TEST_DATA_SIZE) {
 						i = espress_stream_flush(client_sid, 0);
@@ -240,19 +242,24 @@ static void test_main()
 				}
 			}
 			if (j == -1) {
-				w = sizeof(recv_data) - (v & DATA_MASK);
-				k = espress_stream_recv(server_sid, recv_data, &w, 0);
-				assert(k <= 0);
-				if (k == 0) {
-					if (0 < w) {
-						assert(0 == memcmp(recv_data, send_data + (v & DATA_MASK), w));
-						v += w;
+				for ( ; ; ) {
+					w = sizeof(recv_data) - (v & DATA_MASK);
+					k = espress_stream_recv(server_sid, recv_data, &w, 0);
+					assert(k <= 0);
+					if (k == 0) {
+						if (0 < w) {
+							assert(0 == memcmp(recv_data, send_data + (v & DATA_MASK), w));
+							v += w;
+						} else {
+							printf("\n\n\napi: server: disconnect_detect\n");
+							assert(v == TEST_DATA_SIZE);
+							j = espress_stream_disconnect(server_sid);
+							printf("api: server: disconnect\n");
+							assert(j == 0);
+							break;
+						}
 					} else {
-						printf("\n\n\napi: server: disconnect_detect\n");
-						assert(v == TEST_DATA_SIZE);
-						j = espress_stream_disconnect(server_sid);
-						printf("api: server: disconnect\n");
-						assert(j == 0);
+						break;
 					}
 				}
 			}
