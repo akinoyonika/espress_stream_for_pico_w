@@ -333,9 +333,9 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
 
 /** @brief Wait for any event.
  * 
- * Wait for gettable result for the any function with timeout parameter.
+ * Waits until the result of any function with a timeout parameter is available (i.e. return value is greater than or equal to zero).
  * To confirm which function is able to get result, see return value of each function called with zero timeout.
- * When this function finish in success, but none function may be able to get result.
+ * Even if this function finish in success, none function's result may be abailable.
  * In this case, repeat call this function.
  * You are able to choose event types which relate the function to wait for result.
  * 
@@ -347,7 +347,12 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
  * | ESPRESS_STREAM_EVENT_SEND                | espress_stream_send, espress_stream_flush |
  * | ESPRESS_STREAM_EVENT_RECV                | espress_stream_recv                       |
  * 
- * One or more event types are selectable. Set concated event types with "|" to the event parameter.
+ * One or more event types are selectable. Set event types concatenated with "|" to the event parameter.
+ * Note that each events are set by change in state and reset by calling to the related function.
+ * For example, the ESPRESS_STREAM_EVENT_SEND event is set by incleased free space in the send buffer and reset by calling to espress_stream_send function.
+ * For this reason, even if it is possible to send the ESPRESS_STREAM_EVENT_SEND event may not be setting.
+ * When sending data, instead of waiting for the event before sending the data, attempt to send the data and wait for the event if sending the data is pending.
+ * Similar processing must be done for the ESPRESS_STREAM_EVENT_RECV event.
  * 
  * @param[in] sid
  *     Session ID.
