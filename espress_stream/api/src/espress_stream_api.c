@@ -1121,6 +1121,7 @@ int espress_stream_connect_result(void *sid, unsigned timeout)
 	if (ret == 0) {
 		this->src_state = CONNECTED;
 		this->dst_state = CONNECTED;
+		espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
 	} else if (0 < ret) {
 		this->src_state = DISCONNECTED;
 		this->dst_state = DISCONNECTED;
@@ -1191,6 +1192,7 @@ int espress_stream_connect_detect(void *sid, unsigned timeout)
 	if (ret == 0) {
 		this->src_state = CONNECTED;
 		this->dst_state = CONNECTED;
+		espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
 	} else if (0 < ret) {
 		this->src_state = DISCONNECTED;
 		this->dst_state = DISCONNECTED;
@@ -1412,7 +1414,11 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 		this->is_broken = 1;
 	}
 
-	if (0 < ret) {
+	if (ret == 0) {
+		if (!espress_stream_ring_buffer->is_full(this->send_ring_buffer)) {
+			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
+		}
+	} else if (0 < ret) {
 		this->src_state = DISCONNECTED;
 	}
 	this->is_in_progress = 0;
@@ -1476,7 +1482,11 @@ int espress_stream_flush(void *sid, unsigned timeout)
 		this->is_broken = 1;
 	}
 
-	if (0 < ret) {
+	if (ret <= 0) {
+		if (!espress_stream_ring_buffer->is_full(this->send_ring_buffer)) {
+			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
+		}
+	} else {
 		this->src_state = DISCONNECTED;
 	}
 	this->is_in_progress = 0;
@@ -1606,6 +1616,8 @@ DISCONNECT_DETECT_EXIT:
 	if (ret == 0) {
 		if (*data_size == 0) {
 			this->dst_state = DISCONNECTED;
+		} else if (!espress_stream_ring_buffer->is_empty(this->recv_ring_buffer)) {
+			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
 		}
 	} else if (0 < ret) {
 		this->dst_state = DISCONNECTED;
@@ -1654,20 +1666,22 @@ int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num
 	struct espress_stream_event_flags f[1];
 	struct espress_stream_uint32 start_time[1];
 	struct espress_stream_uint32 timeout_time[1];
-#	define is_event_set(f, e) (                                                                         \
-		((((e) & ESPRESS_STREAM_EVENT_CONNECT_RESULT) != 0) &&                                          \
-			espress_stream_event_flags->is_set((f), ESPRESS_STREAM_EVENT_SESSION_CONNECT_RESULT)) ||    \
-		((((e) & ESPRESS_STREAM_EVENT_CONNECT_DETECT) != 0) &&                                          \
-			espress_stream_event_flags->is_set((f), ESPRESS_STREAM_EVENT_SESSION_CONNECT_DETECT)) ||    \
-		((((e) & ESPRESS_STREAM_EVENT_DISCONNECT_RESULT) != 0) &&                                       \
-			espress_stream_event_flags->is_set((f), ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_RESULT)) || \
-		((((e) & ESPRESS_STREAM_EVENT_RECV) != 0) &&                                                    \
-			espress_stream_event_flags->is_set((f), ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT)) || \
-		((((e) & ESPRESS_STREAM_EVENT_SEND) != 0) &&                                                    \
-			espress_stream_event_flags->is_set((f), ESPRESS_STREAM_EVENT_SESSION_SEND)) ||              \
-		((((e) & ESPRESS_STREAM_EVENT_RECV) != 0) &&                                                    \
-			espress_stream_event_flags->is_set((f), ESPRESS_STREAM_EVENT_SESSION_RECV)) ||              \
-		espress_stream_event_flags->is_set((f), ESPRESS_STREAM_EVENT_NONE)                              \
+#	define is_event_set(s, e) (                                                                                \
+		((((e) & ESPRESS_STREAM_EVENT_CONNECT_RESULT) != 0) &&                                                 \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_CONNECT_RESULT)) ||    \
+		((((e) & ESPRESS_STREAM_EVENT_CONNECT_DETECT) != 0) &&                                                 \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_CONNECT_DETECT)) ||    \
+		((((e) & ESPRESS_STREAM_EVENT_DISCONNECT_RESULT) != 0) &&                                              \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_RESULT)) || \
+		((((e) & ESPRESS_STREAM_EVENT_RECV) != 0) &&                                                           \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT)) || \
+		((((e) & ESPRESS_STREAM_EVENT_SEND) != 0) &&                                                           \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_SEND)) ||              \
+		((((e) & ESPRESS_STREAM_EVENT_RECV) != 0) &&                                                           \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_RECV)) ||              \
+		((((e) & ESPRESS_STREAM_EVENT_FLUSH) != 0) &&                                                          \
+			espress_stream_ring_buffer->is_empty((s)->send_ring_buffer)) ||                                     \
+		espress_stream_event_flags->is_set((f), ESPRESS_STREAM_EVENT_NONE)                                     \
 	)
 
 #	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
@@ -1701,7 +1715,7 @@ int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num
 			break;
 		}
 		get_session(sids[i])->is_in_progress = 1;
-		if (is_event_set(get_session(sids[i])->flags, events[i])) {
+		if (is_event_set(get_session(sids[i]), events[i])) {
 			ret++;
 		}
 		is_connecting = (is_connecting || (get_session(sids[i])->src_state == CONNECTING));
@@ -1761,7 +1775,7 @@ int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num
 					for (i = 0, ret = 0 ; i < num ; i++) {
 						event_wait(get_session(sids[i])->event, f, espress_stream_uint32_0);
 						espress_stream_event_flags->compo(get_session(sids[i])->flags, f);
-						if (is_event_set(get_session(sids[i])->flags, events[i])) {
+						if (is_event_set(get_session(sids[i]), events[i])) {
 							ret++;
 						}
 					}
@@ -1798,7 +1812,7 @@ int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num
 					for (i = 0, ret = 0 ; i < num ; i++) {
 						event_wait(get_session(sids[i])->event, f, espress_stream_uint32_0);
 						espress_stream_event_flags->compo(get_session(sids[i])->flags, f);
-						if (is_event_set(get_session(sids[i])->flags, events[i])) {
+						if (is_event_set(get_session(sids[i]), events[i])) {
 							ret++;
 						}
 					}

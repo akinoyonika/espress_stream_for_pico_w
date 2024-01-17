@@ -132,12 +132,21 @@ static unsigned char arg_public_key[] = PUBLIC_KEY;
 static char const *arg_user_id = USER_ID;
 static char const *arg_user_password = USER_PASSWORD;
 
+#pragma GCC push_options
+#	pragma GCC optimize ("O0")	/* why ? */
+	static int _espress_stream_wait_any(void *sid, unsigned event, unsigned timeout)
+	{
+		return espress_stream_wait_any(sid, event, timeout);
+	}
+#	define espress_stream_wait_any(s, e, t) _espress_stream_wait_any(s, e, t)
+#pragma GCC pop_options
+
 struct file_tx_attr {
 	unsigned index;
 	int is_attached;
 	pthread_t thread;
 	void *sid;
-	int is_running;
+	volatile int is_running;
 	struct sockaddr_storage const *address;
 	char const *file_name;
 	int ret;
@@ -368,7 +377,7 @@ static int recv_connect_payload(void *sid, int (*callback)(void *sid, void *payl
 
 static int conn(struct file_tx_attr *attr,
 	struct sockaddr_storage const *address,
-	unsigned timeout, int *is_running)
+	unsigned timeout, volatile int *is_running)
 {
 	int i;
 	unsigned t;
@@ -420,7 +429,7 @@ static int conn(struct file_tx_attr *attr,
 static int send_recv(struct file_tx_attr *attr,
 	void const *send_data, unsigned *send_data_size,
 	void *recv_data, unsigned *recv_data_size,
-	unsigned timeout, int *is_running)
+	unsigned timeout, volatile int *is_running)
 {
 	int i;
 	int j;
@@ -428,7 +437,7 @@ static int send_recv(struct file_tx_attr *attr,
 	void *sid = attr->sid;
 	unsigned const start_time = espress_stream_time();
 
-	for (i = -1, j = -1, t = timeout ; *is_running && (i == -1) && (j == -1) ; ) {
+	for (i = -1, j = -1, t = 0 ; *is_running && (i == -1) && (j == -1) ; ) {
 		t = timeout - t;
 		espress_stream_wait_any(sid, ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV, t);
 		i = espress_stream_send(sid, send_data, send_data_size, 0);
@@ -446,7 +455,7 @@ static int send_recv(struct file_tx_attr *attr,
 
 static int flush_recv(struct file_tx_attr *attr,
 	void *recv_data, unsigned *recv_data_size,
-	unsigned timeout, int *is_running)
+	unsigned timeout, volatile int *is_running)
 {
 	int i;
 	int j;
@@ -454,7 +463,7 @@ static int flush_recv(struct file_tx_attr *attr,
 	void *sid = attr->sid;
 	unsigned const start_time = espress_stream_time();
 
-	for (i = -1, j = -1, t = timeout ; *is_running && (i == -1) && (j == -1) ; ) {
+	for (i = -1, j = -1, t = 0 ; *is_running && (i == -1) && (j == -1) ; ) {
 		t = timeout - t;
 		espress_stream_wait_any(sid, ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV, t);
 		i = espress_stream_flush(sid, 0);
@@ -483,7 +492,7 @@ static void *file_tx(void *param)
 	void *ret = param;
 	struct sockaddr_storage const *address = ((struct file_tx_attr *)param)->address;
 	unsigned index = ((struct file_tx_attr *)param)->index;
-	int *is_running = &(((struct file_tx_attr *)param)->is_running);
+	volatile int *is_running = &(((struct file_tx_attr *)param)->is_running);
 	char const *file_name = ((struct file_tx_attr *)param)->file_name;
 	char const *main_file_name;
 	FILE *file;
@@ -637,7 +646,11 @@ static void *file_tx(void *param)
 		i = flush_recv((struct file_tx_attr *)param, &b, &w, 0, is_running);
 		j = (i >> 2) & 0x03; if (1 < j) j = -1;
 		i = i & 0x03; if (1 < i) i = -1;
-		if ((0 <= i) || ((j == 0) && (w == 0))) {
+		if (0 <= i) {
+			break;
+		}
+		if ((j == 0) && (w == 0)) {
+			i = 1;
 			break;
 		}
 		v = espress_stream_buffered_send_size(*sid, NULL);
@@ -647,12 +660,15 @@ static void *file_tx(void *param)
 
 		if ((t = (espress_stream_time() - start_time) & 0xffffffff) < TIMEOUT) {
 			t = TIMEOUT - t;
-			espress_stream_wait_any(*sid, ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV, *is_running ? t : 0);
+			if (1000000 < t) {
+				t = 1000000;
+			}
+			espress_stream_wait_any(*sid, ESPRESS_STREAM_EVENT_FLUSH | ESPRESS_STREAM_EVENT_RECV, t);
 		} else {
 			break;
 		}
 	}
-	if (!*is_running || (i != 0) || ((j == 0) && (w == 0))) {
+	if (!*is_running || (i != 0)) {
 		ret = NULL;
 		goto DATA_SEND_TERMINATE_FAILURE_EXIT;
 	}

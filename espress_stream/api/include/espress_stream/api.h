@@ -87,6 +87,7 @@
 #define ESPRESS_STREAM_EVENT_DISCONNECT_RESULT (1 << 2)
 #define ESPRESS_STREAM_EVENT_SEND (1 << 3)
 #define ESPRESS_STREAM_EVENT_RECV (1 << 4)
+#define ESPRESS_STREAM_EVENT_FLUSH (1 << 5)
 
 struct espress_stream_session_ex_param {
 	int (*send_connect_payload)(void *sid, int (*callback)(void *sid, void const *payload, unsigned payload_size, int is_rejected), void *param);
@@ -339,20 +340,16 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
  * In this case, repeat call this function.
  * You are able to choose event types which relate the function to wait for result.
  * 
- * | Event types                              | Functions                                 |
- * |------------------------------------------|-------------------------------------------|
- * | ESPRESS_STREAM_EVENT_CONNECT_RESULT      | espress_stream_connect_result             |
- * | ESPRESS_STREAM_EVENT_CONNECT_DETECT      | espress_stream_connect_detect             |
- * | ESPRESS_STREAM_EVENT_DISCONNECT_RESULT   | espress_stream_disconnect_result          |
- * | ESPRESS_STREAM_EVENT_SEND                | espress_stream_send, espress_stream_flush |
- * | ESPRESS_STREAM_EVENT_RECV                | espress_stream_recv                       |
+ * | Event types                            | Functions                        |
+ * |----------------------------------------|----------------------------------|
+ * | ESPRESS_STREAM_EVENT_CONNECT_RESULT    | espress_stream_connect_result    |
+ * | ESPRESS_STREAM_EVENT_CONNECT_DETECT    | espress_stream_connect_detect    |
+ * | ESPRESS_STREAM_EVENT_DISCONNECT_RESULT | espress_stream_disconnect_result |
+ * | ESPRESS_STREAM_EVENT_SEND              | espress_stream_send              |
+ * | ESPRESS_STREAM_EVENT_RECV              | espress_stream_recv              |
+ * | ESPRESS_STREAM_EVENT_FLUSH             | espress_stream_flush             |
  * 
  * One or more event types are selectable. Set event types concatenated with "|" to the event parameter.
- * Note that each events are set by change in state and reset by calling to the related function.
- * For example, the ESPRESS_STREAM_EVENT_SEND event is set by incleased free space in the send buffer and reset by calling to espress_stream_send function.
- * For this reason, even if it is possible to send the ESPRESS_STREAM_EVENT_SEND event may not be setting.
- * When sending data, instead of waiting for the event before sending the data, attempt to send the data and wait for the event if sending the data is pending.
- * Similar processing must be done for the ESPRESS_STREAM_EVENT_RECV event.
  * 
  * @param[in] sid
  *     Session ID.

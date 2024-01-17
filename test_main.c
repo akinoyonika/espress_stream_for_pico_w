@@ -205,10 +205,9 @@ static void test_main()
 		events[0] = ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV;
 		events[1] = ESPRESS_STREAM_EVENT_RECV;
 		for (i = -1, j = -1, u = 0, v = 0 ; (i == -1) || (j == -1) ; ) {
-			if (0 < u) {
-				m = espress_stream_poll(sids, events, 2, 0xffffffff);
-				assert(0 < m);
-			}
+			m = espress_stream_poll(sids, events, 2, 0xffffffff);
+			assert(0 < m);
+
 			if (i == -1) {
 				w = sizeof(recv_data);
 				k = espress_stream_recv(client_sid, recv_data, &w, 0);
@@ -233,6 +232,7 @@ static void test_main()
 					if (u == TEST_DATA_SIZE) {
 						i = espress_stream_flush(client_sid, 0);
 						assert(i <= 0);
+						events[0] = ESPRESS_STREAM_EVENT_FLUSH;
 						if (i == 0) {
 							i = espress_stream_disconnect(client_sid);
 							printf("\n\n\napi: client: disconnect\n");
