@@ -368,12 +368,22 @@ int espress_stream_wait_any(void *sid, unsigned event, unsigned timeout);
 /** @brief Break to waiting function
  * 
  * Break to waiting function. Apply this function to the function with timeout parameter.
- * The waiting function return soon because of timeout, when this function is called.
+ * If this function is called while a wait function is running, it return because of timeout that time.
+ * If this function is called when no wait function is running, the subsequently executed wait functions return immediately because of  timeout.
  * 
  * @param[in] sid
  *     Session ID.
  */
 void espress_stream_wait_break(void *sid);
+
+/** @brief Cancel break to waiting function
+ * 
+ * This function prevent to immediately return of a subsequently executed waiting function by espress_stream_wait_break function.
+ * 
+ * @param[in] sid
+ *     Session ID.
+ */
+void espress_stream_wait_cancel_break(void *sid);
 
 /** @brief Polling multiple session.
  * 

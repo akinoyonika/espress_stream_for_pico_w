@@ -10,7 +10,7 @@
 #include "wifi_config.h"
 
 #define ADDRESS "192.168.1.2"
-#define PORT "1234"
+#define PORT "12345"
 
 static void _dump(unsigned char const *buffer, unsigned size)
 {
