@@ -97,7 +97,7 @@ static void _yield(struct espress_stream_timer *this, struct espress_stream_uint
 	struct espress_stream_uint32 u[1];
 	void (*callback)(struct espress_stream_timer *this, void *param) = NULL;
 
-	espress_stream_cond->signal_lock(this->cond);
+	espress_stream_cond->wait_lock(this->cond);
 
 	if (this->is_active)
 	{

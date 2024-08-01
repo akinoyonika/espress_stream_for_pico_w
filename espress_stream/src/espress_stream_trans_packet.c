@@ -495,6 +495,21 @@ static void _start_rto_measurement(struct espress_stream_trans_packet_rto_measur
 	struct espress_stream_uint32 const *origin,
 	struct espress_stream_uint32 const *counter_number)
 {
+	struct espress_stream_uint32 u[1];
+	struct espress_stream_uint32 v[1];
+
+	if (this->is_in_progress)
+	{
+		espress_stream_tick->get_us(u);
+		espress_stream_uint32_assign(v, espress_stream_max_rto);
+		espress_stream_uint32_shift(v, 1);
+		espress_stream_uint32_sub(u, this->start_time);
+		if (espress_stream_uint32_lt(v, u))
+		{
+			this->is_in_progress = 0;
+		}
+	}
+
 	if (!this->is_in_progress)
 	{
 		this->is_in_progress = 1;

@@ -550,14 +550,14 @@ static void *file_tx(void *param)
 	for (u = 0, s = strlen((char *)buf) + 1 ; u < s ; u += v) {
 		v = s - u;
 		w = 1;
-		i = send_recv((struct file_tx_attr *)param, buf + u, &v, &b, &w, TIMEOUT);
+		i = send_recv((struct file_tx_attr *)param, buf + u, &v, NULL, &w, TIMEOUT);
 		j = (i >> 2) & 0x03; if (1 < j) j = -1;
 		i = i & 0x03; if (1 < i) i = -1;
 		if (i != 0) {
 			i = 1;
 			break;
 		}
-		if ((j == 0) && (w == 0)) {
+		if (0 <= j) {
 			i = 1;
 			break;
 		}
@@ -576,14 +576,14 @@ static void *file_tx(void *param)
 	for (u = 0, s = strlen(main_file_name) + 1 ; u < s ; u += v) {
 		v = s - u;
 		w = 1;
-		i = send_recv((struct file_tx_attr *)param, main_file_name + u, &v, &b, &w, TIMEOUT);
+		i = send_recv((struct file_tx_attr *)param, main_file_name + u, &v, NULL, &w, TIMEOUT);
 		j = (i >> 2) & 0x03; if (1 < j) j = -1;
 		i = i & 0x03; if (1 < i) i = -1;
 		if (i != 0) {
 			i = 1;
 			break;
 		}
-		if ((j == 0) && (w == 0)) {
+		if (0 <= j) {
 			i = 1;
 			break;
 		}
@@ -612,14 +612,14 @@ static void *file_tx(void *param)
 				espress_stream_fast_retransmit_count(*sid));
 			v = s - u;
 			w = 1;
-			i = send_recv((struct file_tx_attr *)param, buf + u, &v, &b, &w, TIMEOUT);
+			i = send_recv((struct file_tx_attr *)param, buf + u, &v, NULL, &w, TIMEOUT);
 			j = (i >> 2) & 0x03; if (1 < j) j = -1;
 			i = i & 0x03; if (1 < i) i = -1;
 			if (i != 0) {
 				i = 1;
 				break;
 			}
-			if ((j == 0) && (w == 0)) {
+			if (0 <= j) {
 				i = 1;
 				break;
 			}
@@ -656,13 +656,13 @@ static void *file_tx(void *param)
 			espress_stream_send_timeout_count(*sid),
 			espress_stream_fast_retransmit_count(*sid));
 		w = 1;
-		i = flush_recv((struct file_tx_attr *)param, &b, &w, 0);
+		i = flush_recv((struct file_tx_attr *)param, NULL, &w, 0);
 		j = (i >> 2) & 0x03; if (1 < j) j = -1;
 		i = i & 0x03; if (1 < i) i = -1;
 		if (0 <= i) {
 			break;
 		}
-		if ((j == 0) && (w == 0)) {
+		if (0 <= j) {
 			i = 1;
 			break;
 		}
@@ -708,7 +708,10 @@ USER_ID_PASS_SEND_FAILURE_EXIT:
 			ret = NULL;
 		} else {
 			w = 1;
-			espress_stream_recv(*sid, &b, &w, *is_running ? TIMEOUT : 0);
+			i = espress_stream_recv(*sid, &b, &w, *is_running ? TIMEOUT : 0);
+			if ((i != 0) || (w != 0)) {
+				ret = NULL;
+			}
 		}
 	}
 CONNECT_FAILURE_EXIT:

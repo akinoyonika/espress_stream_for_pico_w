@@ -1296,7 +1296,7 @@ EXIT:
 
 static int local_send(struct session *this, void const *data, unsigned *data_size)
 {
-	int ret = 0;
+	int ret = -1;
 	u_t u;
 	u_t v;
 	b_t *d;
@@ -1318,20 +1318,27 @@ static int local_send(struct session *this, void const *data, unsigned *data_siz
 	} else {
 		u = 0;
 	}
-	v = d_size - u;
-	memcpy(d, data, v);
-	if (0 < u) {
-		memcpy(buffer, data + v, u);
-	}
 
-	if (0 < d_size) {
-		espress_stream_ring_buffer->en(this->send_ring_buffer, d_size);
-		ret = espress_stream_session->send(this->session);
+	if (data != NULL) {
+		v = d_size - u;
+		memcpy(d, data, v);
+		if (0 < u) {
+			memcpy(buffer, data + v, u);
+		}
+
+		if (0 < d_size) {
+			espress_stream_ring_buffer->en(this->send_ring_buffer, d_size);
+			ret = espress_stream_session->send(this->session);
+		}
 	}
 
 	*data_size = d_size;
 
 EXIT:
+
+	if (ret == -1) {
+		ret = espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR) ? 1 : 0;
+	}
 
 	return ret;
 }
@@ -1350,7 +1357,7 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 
 	espress_stream_mutex->lock(this->mutex);
 
-	if ((this->src_state != CONNECTED) || this->is_in_progress) {
+	if ((this->src_state != CONNECTED) || this->is_in_progress || (*data_size == 0)) {
 		ret = 1;
 		goto EXIT;
 	}
@@ -1365,8 +1372,16 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 	ret = local_send(this, data, &v);
 	if ((ret == 0) && (v < *data_size)) {
 		for ( ; ; ) {
+			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) {
+				ret = 1;
+				break;
+			}
+
 			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND)) {
 				espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
+				if (data == NULL) {
+					v = 0;
+				}
 				w = *data_size - v;
 				ret = local_send(this, ((b_t *)data) + v, &w);
 				v += w;
@@ -1407,7 +1422,11 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
 		}
 	} else if (0 < ret) {
+		espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR);
 		this->src_state = DISCONNECTED;
+		if (this->dst_state == CONNECTED) {
+			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR);
+		}
 	}
 	this->is_in_progress = 0;
 
@@ -1444,6 +1463,11 @@ int espress_stream_flush(void *sid, unsigned timeout)
 	ret = espress_stream_session->flush(this->session);
 	if (ret == 0) {
 		for ( ; (ret = (espress_stream_ring_buffer->is_empty(this->send_ring_buffer) ? 0 : -1)) == -1 ; ) {
+			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) {
+				ret = 1;
+				break;
+			}
+
 			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND)) {
 				espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
 			}
@@ -1472,7 +1496,11 @@ int espress_stream_flush(void *sid, unsigned timeout)
 			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
 		}
 	} else {
+		espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR);
 		this->src_state = DISCONNECTED;
+		if (this->dst_state == CONNECTED) {
+			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR);
+		}
 	}
 	this->is_in_progress = 0;
 
@@ -1485,7 +1513,7 @@ EXIT:
 
 static int local_recv(struct session *this, void *data, unsigned *data_size)
 {
-	int ret = 0;
+	int ret = -1;
 	u_t u;
 	u_t v;
 	b_t *d;
@@ -1507,20 +1535,29 @@ static int local_recv(struct session *this, void *data, unsigned *data_size)
 	} else {
 		u = 0;
 	}
-	v = d_size - u;
-	memcpy(data, d, v);
-	if (0 < u) {
-		memcpy(data + v, buffer, u);
-	}
 
-	if (0 < d_size) {
-		espress_stream_ring_buffer->de(this->recv_ring_buffer, d_size);
-		ret = espress_stream_session->recv(this->session);
+	if (data != NULL) {
+		v = d_size - u;
+		memcpy(data, d, v);
+		if (0 < u) {
+			memcpy(data + v, buffer, u);
+		}
+
+		if (0 < d_size) {
+			espress_stream_ring_buffer->de(this->recv_ring_buffer, d_size);
+			if (!espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT)) {
+				ret = espress_stream_session->recv(this->session);
+			}
+		}
 	}
 
 	*data_size = d_size;
 
 EXIT:
+
+	if (ret == -1) {
+		ret = espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR) ? 1 : 0;
+	}
 
 	return ret;
 }
@@ -1538,7 +1575,7 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
 
 	espress_stream_mutex->lock(this->mutex);
 
-	if ((this->dst_state != CONNECTED) || this->is_in_progress) {
+	if ((this->dst_state != CONNECTED) || this->is_in_progress || (*data_size == 0)) {
 		ret = 1;
 		goto EXIT;
 	}
@@ -1553,6 +1590,11 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
 	ret = local_recv(this, data, &v);
 	if ((ret == 0) && (v == 0)) {
 		for ( ; ; ) {
+			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) {
+				ret = 1;
+				break;
+			}
+
 			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV)) {
 				espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
 				v = *data_size;
@@ -1583,11 +1625,13 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
 		}
 	}
 
-	if (0 < v) {
-		*data_size = v;
-		ret = 0;
-	} else {
-		ret = -1;
+	if (ret == 0) {
+		if (0 < v) {
+			*data_size = v;
+			ret = 0;
+		} else {
+			ret = -1;
+		}
 	}
 
 DISCONNECT_DETECT_EXIT:
@@ -1597,12 +1641,19 @@ DISCONNECT_DETECT_EXIT:
 
 	if (ret == 0) {
 		if (*data_size == 0) {
-			this->dst_state = DISCONNECTED;
+			if (data == NULL) {
+				espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT);
+			} else {
+				this->dst_state = DISCONNECTED;
+			}
 		} else if (!espress_stream_ring_buffer->is_empty(this->recv_ring_buffer)) {
 			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
 		}
 	} else if (0 < ret) {
 		this->dst_state = DISCONNECTED;
+		if (this->src_state == CONNECTED) {
+			espress_stream_event_flags->set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR);
+		}
 	}
 	this->is_in_progress = 0;
 
@@ -1676,6 +1727,12 @@ int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num
 			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_RECV)) ||              \
 		((((e) & ESPRESS_STREAM_EVENT_FLUSH) != 0) &&                                                          \
 			espress_stream_ring_buffer->is_empty((s)->send_ring_buffer)) ||                                    \
+		((((e) & ESPRESS_STREAM_EVENT_SEND) != 0) &&                                                           \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) ||             \
+		((((e) & ESPRESS_STREAM_EVENT_RECV) != 0) &&                                                           \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) ||             \
+		((((e) & ESPRESS_STREAM_EVENT_FLUSH) != 0) &&                                                          \
+			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) ||             \
 		((s)->is_broken &&                                                                                     \
 			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_NONE))                         \
 	)

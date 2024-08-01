@@ -64,8 +64,8 @@ add_executable(espress_stream_app_lwip_poll ${APP_SOURCES})
 
 target_compile_definitions(espress_stream_app_lwip_poll PRIVATE
 	ESPRESS_STREAM_MAJOR_VERSION=1
-	ESPRESS_STREAM_MINOR_VERSION=3
-	ESPRESS_STREAM_PROTOCOL_VERSION=0)
+	ESPRESS_STREAM_MINOR_VERSION=4
+	ESPRESS_STREAM_PROTOCOL_VERSION=1)
 target_include_directories(espress_stream_app_lwip_poll PRIVATE
 	${CMAKE_CURRENT_LIST_DIR}
 )
@@ -82,8 +82,8 @@ add_executable(espress_stream_app_lwip_background ${APP_SOURCES})
 
 target_compile_definitions(espress_stream_app_lwip_background PRIVATE
 	ESPRESS_STREAM_MAJOR_VERSION=1
-	ESPRESS_STREAM_MINOR_VERSION=3
-	ESPRESS_STREAM_PROTOCOL_VERSION=0)
+	ESPRESS_STREAM_MINOR_VERSION=4
+	ESPRESS_STREAM_PROTOCOL_VERSION=1)
 target_include_directories(espress_stream_app_lwip_background PRIVATE
 	${CMAKE_CURRENT_LIST_DIR}
 )

@@ -27,8 +27,9 @@
 #include "espress_stream/session.h"
 
 struct espress_stream_uint32 const espress_stream_protocol_version[1] = {ESPRESS_STREAM_UINT32(0x00, 0x00, ((ESPRESS_STREAM_PROTOCOL_VERSION >> 8) & 0xff), ESPRESS_STREAM_PROTOCOL_VERSION & 0xff)};
-struct espress_stream_uint32 /*const*/ espress_stream_session_timeout_time[1] = {ESPRESS_STREAM_SESSION_TIMEOUT_TIME};
-struct espress_stream_uint32 /*const*/ espress_stream_beacon_interval_time[1] = {ESPRESS_STREAM_BEACON_INTERVAL_TIME};
+struct espress_stream_uint32 const espress_stream_send_session_timeout_time[1] = {ESPRESS_STREAM_SESSION_TIMEOUT_TIME};
+struct espress_stream_uint32 const espress_stream_recv_session_timeout_time[1] = {ESPRESS_STREAM_SESSION_TIMEOUT_TIME};
+struct espress_stream_uint32 const espress_stream_beacon_interval_time[1] = {ESPRESS_STREAM_BEACON_INTERVAL_TIME};
 
 static i_t _initialize(struct espress_stream_session *this,
 	struct espress_stream_trans_packet_interface *interface,
@@ -62,11 +63,13 @@ static u_t _cwnd(struct espress_stream_session *this);
 static u_t _send_timeout_count(struct espress_stream_session *this);
 static u_t _fast_retransmit_count(struct espress_stream_session *this);
 static void _send_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout);
-static void _session_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout);
+static void _send_session_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout);
+static void _recv_session_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout);
 static void _beacon_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout);
 static void _this_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout);
 static void _send_timer_yield_break(struct espress_stream_session *this);
-static void _session_timer_yield_break(struct espress_stream_session *this);
+static void _send_session_timer_yield_break(struct espress_stream_session *this);
+static void _recv_session_timer_yield_break(struct espress_stream_session *this);
 static void _beacon_timer_yield_break(struct espress_stream_session *this);
 static void _this_yield_break(struct espress_stream_session *this);
 
@@ -95,14 +98,16 @@ struct espress_stream_session_ops const espress_stream_session[] =
 	_fast_retransmit_count,
 	{
 		_send_timer_yield,
-		_session_timer_yield,
+		_send_session_timer_yield,
+		_recv_session_timer_yield,
 		_beacon_timer_yield,
 		_this_yield,
 		NULL
 	},
 	{
 		_send_timer_yield_break,
-		_session_timer_yield_break,
+		_send_session_timer_yield_break,
+		_recv_session_timer_yield_break,
 		_beacon_timer_yield_break,
 		_this_yield_break,
 		NULL
@@ -325,10 +330,15 @@ static i_t _initialize(struct espress_stream_session *this,
 		ret = 1;
 		goto SEND_TIMER_INIT_FAIL_EXIT;
 	}
-	if (0 != espress_stream_timer->initialize(this->session_timer))
+	if (0 != espress_stream_timer->initialize(this->send_session_timer))
 	{
 		ret = 1;
-		goto SESSION_TIMER_INIT_FAIL_EXIT;
+		goto SEND_SESSION_TIMER_INIT_FAIL_EXIT;
+	}
+	if (0 != espress_stream_timer->initialize(this->recv_session_timer))
+	{
+		ret = 1;
+		goto RECV_SESSION_TIMER_INIT_FAIL_EXIT;
 	}
 	if (0 != espress_stream_timer->initialize(this->beacon_timer))
 	{
@@ -360,8 +370,10 @@ static i_t _initialize(struct espress_stream_session *this,
 	}
 
 BEACON_TIMER_INIT_FAIL_EXIT:
-	if (0 != ret) espress_stream_timer->finalize(this->beacon_timer);
-SESSION_TIMER_INIT_FAIL_EXIT:
+	if (0 != ret) espress_stream_timer->finalize(this->recv_session_timer);
+RECV_SESSION_TIMER_INIT_FAIL_EXIT:
+	if (0 != ret) espress_stream_timer->finalize(this->send_session_timer);
+SEND_SESSION_TIMER_INIT_FAIL_EXIT:
 	if (0 != ret) espress_stream_timer->finalize(this->send_timer);
 SEND_TIMER_INIT_FAIL_EXIT:
 	if (0 != ret) espress_stream_mutex->finalize(this->mutex);
@@ -381,7 +393,8 @@ static void _finalize(struct espress_stream_session *this)
 	_final_cong_avoid(this->cong_avoid);
 	_final_fast_retransmit(this->fast_retransmit);
 	espress_stream_timer->finalize(this->beacon_timer);
-	espress_stream_timer->finalize(this->session_timer);
+	espress_stream_timer->finalize(this->recv_session_timer);
+	espress_stream_timer->finalize(this->send_session_timer);
 	espress_stream_timer->finalize(this->send_timer);
 	espress_stream_mutex->finalize(this->mutex);
 	espress_stream_trans_packet->close(this->trans_packet);
@@ -481,6 +494,7 @@ static i_t _disconnect(struct espress_stream_session *this)
 	}
 
 	espress_stream_timer->cancel(this->send_timer);
+	espress_stream_timer->cancel(this->send_session_timer);
 	espress_stream_timer->cancel(this->beacon_timer);
 	this->send_state = _DISCONNECT;
 
@@ -694,7 +708,23 @@ static void _send_timeout_callback(struct espress_stream_timer *timer, void *par
 	espress_stream_mutex->unlock(this->mutex);
 }
 
-static void _session_timeout_callback(struct espress_stream_timer *timer, void *param)
+static void _send_session_timeout_callback(struct espress_stream_timer *timer, void *param)
+{
+	struct espress_stream_session *this = (struct espress_stream_session *)param;
+	espress_stream_mutex->lock(this->mutex);
+	espress_stream_timer->cancel(this->send_timer);
+	espress_stream_timer->cancel(this->beacon_timer);
+	this->send_state = _CLOSED;
+	if (_ESTABLISHED == this->recv_state)
+	{
+		espress_stream_timer->cancel(this->recv_session_timer);
+		this->recv_state = _CLOSED;
+	}
+	espress_stream_event->set(this->outer_event, ESPRESS_STREAM_EVENT_SESSION_ERROR);
+	espress_stream_mutex->unlock(this->mutex);
+}
+
+static void _recv_session_timeout_callback(struct espress_stream_timer *timer, void *param)
 {
 	struct espress_stream_session *this = (struct espress_stream_session *)param;
 	espress_stream_mutex->lock(this->mutex);
@@ -731,9 +761,14 @@ static void _send_timer_yield(struct espress_stream_session *this, struct espres
 	espress_stream_timer->yield(this->send_timer, timeout);
 }
 
-static void _session_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout)
+static void _send_session_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout)
 {
-	espress_stream_timer->yield(this->session_timer, timeout);
+	espress_stream_timer->yield(this->send_session_timer, timeout);
+}
+
+static void _recv_session_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout)
+{
+	espress_stream_timer->yield(this->recv_session_timer, timeout);
 }
 
 static void _beacon_timer_yield(struct espress_stream_session *this, struct espress_stream_uint32 const *timeout)
@@ -808,6 +843,9 @@ static void _post_process_recv_ack(struct espress_stream_session *this,
 	struct espress_stream_uint32 tail_address[1];
 	struct espress_stream_uint32 sent_size[1];
 	struct espress_stream_uint32 rcvd_size[1];
+
+	espress_stream_timer->cancel(this->send_session_timer);
+	espress_stream_timer->start(this->send_session_timer, _send_session_timeout_callback, this, espress_stream_send_session_timeout_time);
 
 	espress_stream_ring_buffer->tail(this->send_window->buffer, tail_address, 0);
 	espress_stream_uint32_assign(sent_size, this->send_window->data_address);
@@ -1035,9 +1073,10 @@ static i_t _yield_server_send_connect(struct espress_stream_session *this)
 		espress_stream_uint32_and(connection_param, reject_param_val);
 		if (espress_stream_uint32_eq(connection_param, espress_stream_uint32_0))
 		{
+			espress_stream_timer->start(this->send_session_timer, _send_session_timeout_callback, this, espress_stream_send_session_timeout_time);
 			espress_stream_timer->start(this->beacon_timer, _beacon_timeout_callback, this, espress_stream_beacon_interval_time);
 			this->send_state = _ESTABLISHED;
-			espress_stream_timer->start(this->session_timer, _session_timeout_callback, this, espress_stream_session_timeout_time);
+			espress_stream_timer->start(this->recv_session_timer, _recv_session_timeout_callback, this, espress_stream_recv_session_timeout_time);
 			this->recv_state = _ESTABLISHED;
 		}
 		else
@@ -1101,9 +1140,10 @@ static i_t _yield_client_recv_wait_connect(struct espress_stream_session *this)
 		espress_stream_uint32_and(connection_param, reject_param_val);
 		if (espress_stream_uint32_eq(connection_param, espress_stream_uint32_0))
 		{
+			espress_stream_timer->start(this->send_session_timer, _send_session_timeout_callback, this, espress_stream_send_session_timeout_time);
 			espress_stream_timer->start(this->beacon_timer, _beacon_timeout_callback, this, espress_stream_beacon_interval_time);
 			this->send_state = _ESTABLISHED;
-			espress_stream_timer->start(this->session_timer, _session_timeout_callback, this, espress_stream_session_timeout_time);
+			espress_stream_timer->start(this->recv_session_timer, _recv_session_timeout_callback, this, espress_stream_recv_session_timeout_time);
 			this->recv_state = _ESTABLISHED;
 		}
 		else
@@ -1245,10 +1285,13 @@ static i_t _yield_recv_recv_established(struct espress_stream_session *this)
 			&dst_send_data_size);
 		if (0 == ret)
 		{
-			_post_process_recv_ack(this, dst_receive_window_address, dst_receive_window_size, dst_is_ack_true);
+			if (_ESTABLISHED == this->send_state)
+			{
+				_post_process_recv_ack(this, dst_receive_window_address, dst_receive_window_size, dst_is_ack_true);
+			}
 
-			espress_stream_timer->cancel(this->session_timer);
-			espress_stream_timer->start(this->session_timer, _session_timeout_callback, this, espress_stream_session_timeout_time);
+			espress_stream_timer->cancel(this->recv_session_timer);
+			espress_stream_timer->start(this->recv_session_timer, _recv_session_timeout_callback, this, espress_stream_recv_session_timeout_time);
 
 			if (0 < dst_send_data_size)
 			{
@@ -1438,9 +1481,9 @@ static i_t _yield_recv_recv_established(struct espress_stream_session *this)
 				{
 					espress_stream_event->set(this->outer_event, ESPRESS_STREAM_EVENT_SESSION_RECV);
 				}
-				this->is_ack_ready = 1;
-				espress_stream_event->set(this->event, ESPRESS_STREAM_EVENT_TRANS_PACKET_SEND);
 			}
+			this->is_ack_ready = 1;
+			espress_stream_event->set(this->event, ESPRESS_STREAM_EVENT_TRANS_PACKET_SEND);
 			goto EXIT;
 		}
 #	else
@@ -1456,10 +1499,13 @@ static i_t _yield_recv_recv_established(struct espress_stream_session *this)
 			&dst_send_data_size);
 		if (0 == ret)
 		{
-			_post_process_recv_ack(this, dst_receive_window_address, dst_receive_window_size, dst_is_ack_true);
+			if (_ESTABLISHED == this->send_state)
+			{
+				_post_process_recv_ack(this, dst_receive_window_address, dst_receive_window_size, dst_is_ack_true);
+			}
 
-			espress_stream_timer->cancel(this->session_timer);
-			espress_stream_timer->start(this->session_timer, _session_timeout_callback, this, espress_stream_session_timeout_time);
+			espress_stream_timer->cancel(this->recv_session_timer);
+			espress_stream_timer->start(this->recv_session_timer, _recv_session_timeout_callback, this, espress_stream_recv_session_timeout_time);
 
 			if (0 < dst_send_data_size)
 			{
@@ -1607,9 +1653,14 @@ static void _send_timer_yield_break(struct espress_stream_session *this)
 	espress_stream_timer->yield_break(this->send_timer);
 }
 
-static void _session_timer_yield_break(struct espress_stream_session *this)
+static void _send_session_timer_yield_break(struct espress_stream_session *this)
 {
-	espress_stream_timer->yield_break(this->session_timer);
+	espress_stream_timer->yield_break(this->send_session_timer);
+}
+
+static void _recv_session_timer_yield_break(struct espress_stream_session *this)
+{
+	espress_stream_timer->yield_break(this->recv_session_timer);
 }
 
 static void _beacon_timer_yield_break(struct espress_stream_session *this)

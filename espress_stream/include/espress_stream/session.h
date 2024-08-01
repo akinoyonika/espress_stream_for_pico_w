@@ -1,7 +1,7 @@
 #ifndef __ESPRESS_STREAM_SESSION_H__
 #define __ESPRESS_STREAM_SESSION_H__
 
-#define ESPRESS_STREAM_SESSION_NUM_YIELD (4)
+#define ESPRESS_STREAM_SESSION_NUM_YIELD (5)
 #define ESPRESS_STREAM_IS_ADD_DATA_ENABLED (1)
 
 struct espress_stream_session
@@ -38,7 +38,8 @@ struct espress_stream_session
 	struct espress_stream_trans_packet trans_packet[1];
 	struct espress_stream_mutex mutex[1];
 	struct espress_stream_timer send_timer[1];
-	struct espress_stream_timer session_timer[1];
+	struct espress_stream_timer send_session_timer[1];
+	struct espress_stream_timer recv_session_timer[1];
 	struct espress_stream_timer beacon_timer[1];
 
 	struct espress_stream_dgram_address src_address[1];

@@ -10,6 +10,21 @@
 #include "espress_stream/key_exp.h"
 #include "espress_stream/key.h"
 
+#if defined(ESPRESS_STREAM_KEY_MAC_KEY_INFO)
+	static b_t const _mac_key_info[] = ESPRESS_STREAM_KEY_MAC_KEY_INFO;
+#	define _mac_key_info_size (sizeof(_mac_key_info))
+#else
+#	define _mac_key_info (NULL)
+#	define _mac_key_info_size (0)
+#endif
+#if defined(ESPRESS_STREAM_KEY_CIPHER_KEY_INFO)
+	static b_t const _cipher_key_info[] = ESPRESS_STREAM_KEY_CIPHER_KEY_INFO;
+#	define _cipher_key_info_size (sizeof(_cipher_key_info))
+#else
+#	define _cipher_key_info (NULL)
+#	define _cipher_key_info_size (0)
+#endif
+
 #define _fwd_key_idx(i) ((i) = ((i) + 1) % 3)
 #define _prv_key_idx(i) (i)
 #define _cur_key_idx(i) (((i) + 1) % 3)
@@ -50,13 +65,13 @@ static void _initialize(struct espress_stream_key *this, b_t const *key, u_t key
 	espress_stream_key_exp->expand(this->key_exp,
 		this->mac_key[_nxt_key_idx(this->key_idx)],
 		ESPRESS_STREAM_KEY_MAC_KEY_SIZE,
-		(b_t const *)"",
-		0);
+		_mac_key_info,
+		_mac_key_info_size);
 	espress_stream_key_exp->expand(this->key_exp,
 		this->cipher_key[_nxt_key_idx(this->key_idx)],
 		ESPRESS_STREAM_KEY_CIPHER_KEY_SIZE,
-		(b_t const *)"",
-		0);
+		_cipher_key_info,
+		_cipher_key_info_size);
 	espress_stream_key_history_uint_(assign)(this->checks, espress_stream_key_history_uint_(max));
 	espress_stream_uint32_assign(this->current, espress_stream_uint32_max);
 EXIT:
@@ -234,13 +249,13 @@ static i_t _update(struct espress_stream_key *this, struct espress_stream_uint32
 				espress_stream_key_exp->expand(this->key_exp,
 					this->mac_key[_nxt_key_idx(this->key_idx)],
 					ESPRESS_STREAM_KEY_MAC_KEY_SIZE,
-					(b_t const *)"",
-					0);
+					_mac_key_info,
+					_mac_key_info_size);
 				espress_stream_key_exp->expand(this->key_exp,
 					this->cipher_key[_nxt_key_idx(this->key_idx)],
 					ESPRESS_STREAM_KEY_CIPHER_KEY_SIZE,
-					(b_t const *)"",
-					0);
+					_cipher_key_info,
+					_cipher_key_info_size);
 			}
 		}
 		else
