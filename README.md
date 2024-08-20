@@ -21,9 +21,13 @@ OSは未使用(ベア環境)です。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20240803.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240803.tar.gz)
+- [espress_stream_for_pico_w.20240825.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240825.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20240825.tar.gz (1.5-1)
+: - ドキュメントの修正。
+- <tt>espress_stream_dgram.c</tt>を修正。
 
 espress_stream_for_pico_w.20240803.tar.gz (1.4-1)
 : - espress_streamのバージョンアップに対応した。
@@ -69,7 +73,7 @@ $ tar zxvf espress_stream_for_pico_w.########.tar.gz
 ```
 
 パッケージには移植されたespress_streamとサンプルアプリケーションが含まれています。
-サンプルアプリケーションは[linux用の<tt>es_ftx</tt>](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3-es_ftx-es_frx)を移植したものです。
+サンプルアプリケーションは[linux用の<tt>es_ftx</tt>](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)を移植したものです。
 <tt>es_ftx</tt>はクライアントアプリケーションで、サーバーアプリケーション<tt>es_frx</tt>に対してファイルを送信する機能を持ちます。
 移植された<tt>es_ftx</tt>は<tt>test.dat</tt>というファイル名で1MBのダミーデータを送信するように作られています。
 
@@ -109,7 +113,7 @@ $ make espress_stream_app_lwip_background
 #define USER_PASSWORD "tpfBTht8"
 ```
 
-公開鍵、ユーザーID、パスワードは<tt>es_frx</tt>の設定に合わせる必要があります。詳細は「[linux用の<tt>es_ftx</tt>、<tt>es_frx</tt>](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3-es_ftx-es_frx)」を参照してください。
+公開鍵、ユーザーID、パスワードは<tt>es_frx</tt>の設定に合わせる必要があります。詳細は「[linux用の<tt>es_ftx</tt>、<tt>es_frx</tt>](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)」を参照してください。
 
 以上の手順で<tt>build</tt>ディレクトリに<tt>espress_stream_app_lwip_background.uf2</tt>が作成されます。
 これをPico Wに導入してください。
@@ -155,7 +159,7 @@ linuxにてサーバーアプリケーション<tt>es_frx</tt>を起動、ファ
 UDPを使うため、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をライブラリーに追加し、lwIPを導入しています。lwIPはオプションをlwipopts.hに設定します。これを作成し、いずれかのインクルードパスにおいてください。詳細は[pico-examplesの<tt>pico_w/wifi/lwipopts_examples_common.h</tt>](https://github.com/raspberrypi/pico-examples/blob/master/pico_w/wifi/lwipopts_examples_common.h)を参照してください。
 
 アプリケーションからespress_streamを利用するためのAPIはlinux用ライブラリーと同じです。
-詳細は「[linux用のライブラリー使用方法](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/#%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E3%83%BC-libespress_stream.so)」を参照してください。
+詳細は「[linux用のライブラリー使用方法](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream/#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)」を参照してください。
 
 ## ライセンス
 

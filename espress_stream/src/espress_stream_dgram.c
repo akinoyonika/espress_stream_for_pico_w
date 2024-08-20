@@ -254,6 +254,10 @@ static void _send_yield(struct espress_stream_dgram *this, struct espress_stream
 
 	espress_stream_tick->get_us(u);
 	espress_stream_event->wait(this->send_event, f, timeout);
+	if (!espress_stream_event_flags->is_set_any(f))
+	{
+		goto EXIT;
+	}
 
 	cyw43_arch_lwip_begin();
 	errno = 0;
@@ -316,6 +320,8 @@ static void _send_yield(struct espress_stream_dgram *this, struct espress_stream
 
 	espress_stream_mutex->unlock(this->send_mutex);
 
+EXIT:
+
 	return;
 }
 
@@ -328,7 +334,12 @@ static void _recv_yield(struct espress_stream_dgram *this, struct espress_stream
 
 	espress_stream_tick->get_us(u);
 	espress_stream_event->wait(this->recv_event, f, timeout);
+	if (!espress_stream_event_flags->is_set_any(f))
+	{
+		goto EXIT;
+	}
 
+	cyw43_arch_lwip_begin();
 	errno = 0;
 	while (ERR_OK != this->udp_recvfrom)
 	{
@@ -375,6 +386,8 @@ static void _recv_yield(struct espress_stream_dgram *this, struct espress_stream
 	}
 
 	espress_stream_mutex->unlock(this->recv_mutex);
+
+EXIT:
 
 	return;
 }
