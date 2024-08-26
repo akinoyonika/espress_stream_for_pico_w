@@ -19,6 +19,7 @@
 
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
+#include "pico/rand.h"
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
 

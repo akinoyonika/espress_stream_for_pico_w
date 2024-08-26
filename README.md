@@ -21,9 +21,12 @@ OSは未使用(ベア環境)です。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20240825.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240825.tar.gz)
+- [espress_stream_for_pico_w.20240826.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20240826.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20240826.tar.gz (1.5-1)
+: - 乱数生成にpico_randを使用するようにした。
 
 espress_stream_for_pico_w.20240825.tar.gz (1.5-1)
 : - ドキュメントの修正。
@@ -122,11 +125,6 @@ $ make espress_stream_app_lwip_background
 
 現在のところ、メイク時ワーニングが出ます。
 同じコードはlinux用でもメイクされますが、ワーニングは出ておらず、問題ないと判断しています。
-
-### 乱数生成部について
-
-乱数生成部はespress_streamライブラリー(<tt>espress_stream_rand.c</tt>)とアプリケーションプログラム(<tt>app_main.c</tt>内<tt>getrandom</tt>関数)に存在します。
-この部分は動作確認用の簡易な作りになっており、実使用には向きません。
 
 ## 使用方法
 

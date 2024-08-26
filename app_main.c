@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "pico/stdlib.h"
+#include "pico/rand.h"
 #include "pico/cyw43_arch.h"
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
@@ -308,21 +309,16 @@ struct file_tx_attr {
 static unsigned getrandom(unsigned char *b, unsigned s, unsigned f)
 {
 	unsigned ret = 0;
-	static unsigned char p = 0x55;
-	uint32_t t;
+	static unsigned char r[16];
+	static unsigned r_size = 0;
 	(void)f;
 	if (0 < s) {
-		p = p << 1 | p >> 7;
-		t = time_us_32();
-		*b = p;
-		*b = *b ^ ((unsigned char *)&t)[0];
-		*b = *b << 1 | *b >> 7;
-		*b = *b ^ ((unsigned char *)&t)[1];
-		*b = *b << 1 | *b >> 7;
-		*b = *b ^ ((unsigned char *)&t)[2];
-		*b = *b << 1 | *b >> 7;
-		*b = *b ^ ((unsigned char *)&t)[3];
-		*b = *b << 1 | *b >> 7;
+		if (r_size == 0) {
+			get_rand_128((rng_128_t *)r);
+			r_size = 16;
+		}
+		*b = r[16 - r_size];
+		r_size--;
 		ret = 1;
 	}
 	return ret;
