@@ -17,12 +17,14 @@ struct espress_stream_trans_packet_interface
 	struct espress_stream_trans_ring recv_ring[1];
 #	if 0 < ESPRESS_STREAM_MAX_NUM_SESSION
 		struct espress_stream_trans_packet *trans_packet[ESPRESS_STREAM_MAX_NUM_SESSION];
+		struct espress_stream_trans_packet **ptpl;
 #	else
 		struct espress_stream_trans_packet_interface_trans_packet_list
 		{
 			struct espress_stream_trans_packet *trans_packet;
 			struct espress_stream_trans_packet_interface_trans_packet_list *next;
 		} *trans_packet_list;
+		struct espress_stream_trans_packet_interface_trans_packet_list *ptpl;
 #	endif
 };
 

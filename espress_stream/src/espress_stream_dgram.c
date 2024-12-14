@@ -308,7 +308,7 @@ static void _send_yield(struct espress_stream_dgram *this, struct espress_stream
 		else
 		{
 			this->num_send_buffer = 0;
-			this->num_sent_buffer = 1;
+			this->num_sent_buffer = (0 == errno) ? 1 : 0;
 			this->send_errno = errno;
 			espress_stream_event->set(this->send_outer_event, ESPRESS_STREAM_EVENT_DGRAM_SEND_RESULT);
 		}
@@ -374,7 +374,7 @@ static void _recv_yield(struct espress_stream_dgram *this, struct espress_stream
 		else
 		{
 			this->num_recv_buffer = 0;
-			this->num_rcvd_buffer = 1;
+			this->num_rcvd_buffer = (0 == errno) ? 1 : 0;
 			this->recv_errno = errno;
 			espress_stream_event->set(this->recv_outer_event, ESPRESS_STREAM_EVENT_DGRAM_RECV_RESULT);
 			this->udp_recvfrom = -1;

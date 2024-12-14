@@ -23,6 +23,8 @@
 #include "espress_stream/packet.h"
 #include "espress_stream/trans_packet.h"
 
+#define _IS_CONNECTION_ID_RANDOM (1)
+
 struct espress_stream_uint32 const espress_stream_min_rto[1] = {ESPRESS_STREAM_UINT32(0x00, 0x03, 0x0d, 0x40)};
 struct espress_stream_uint32 const espress_stream_max_rto[1] = {ESPRESS_STREAM_SESSION_TIMEOUT_TIME};
 
@@ -245,32 +247,33 @@ struct espress_stream_trans_packet_ops const espress_stream_trans_packet[] =
 		}
 		return ret;
 	}
-	static struct espress_stream_trans_packet *_get_first_trans_packet(struct espress_stream_trans_packet_interface *this)
-	{
-		struct espress_stream_trans_packet *ret = NULL;
-		if (NULL != this->trans_packet)
-		{
-			ret = this->trans_packet[0];
-		}
-		return ret;
-	}
 	static struct espress_stream_trans_packet *_get_next_trans_packet(struct espress_stream_trans_packet_interface *this, struct espress_stream_trans_packet *tp)
 	{
 		struct espress_stream_trans_packet *ret = NULL;
-		static struct espress_stream_trans_packet **n;
-		if (this->trans_packet[0] == tp)
+		if ((NULL == tp) || (*(this->ptpl) == tp))
 		{
-			n = this->trans_packet;
-		}
-		if (n[0] == tp)
-		{
-			n++;
-			if ((n - this->trans_packet) < ESPRESS_STREAM_MAX_NUM_SESSION)
+			if (NULL == tp)
 			{
-				ret = n[0];
+				this->ptpl = this->trans_packet;
+			}
+			else
+			{
+				(this->ptpl)++;
+			}
+			for ( ; (this->ptpl - this->trans_packet) < ESPRESS_STREAM_MAX_NUM_SESSION ; (this->ptpl)++)
+			{
+				if (NULL != *(this->ptpl))
+				{
+					ret = *(this->ptpl);
+					break;
+				}
 			}
 		}
 		return ret;
+	}
+	static struct espress_stream_trans_packet *_get_first_trans_packet(struct espress_stream_trans_packet_interface *this)
+	{
+		return _get_next_trans_packet(this, NULL);
 	}
 #else
 	static void _init_trans_packet(struct espress_stream_trans_packet_interface *this)
@@ -364,32 +367,29 @@ struct espress_stream_trans_packet_ops const espress_stream_trans_packet[] =
 		}
 		return ret;
 	}
-	static struct espress_stream_trans_packet *_get_first_trans_packet(struct espress_stream_trans_packet_interface *this)
-	{
-		struct espress_stream_trans_packet *ret = NULL;
-		if (NULL != this->trans_packet_list)
-		{
-			ret =  this->trans_packet_list->trans_packet;
-		}
-		return ret;
-	}
 	static struct espress_stream_trans_packet *_get_next_trans_packet(struct espress_stream_trans_packet_interface *this, struct espress_stream_trans_packet *tp)
 	{
 		struct espress_stream_trans_packet *ret = NULL;
-		static struct espress_stream_trans_packet_interface_trans_packet_list *n;
-		if (this->trans_packet_list->trans_packet == tp)
+		if ((NULL == tp) || (this->ptpl->trans_packet == tp))
 		{
-			n = this->trans_packet_list;
-		}
-		if (n->trans_packet == tp)
-		{
-			n = n->next;
-			if (NULL != n)
+			if (NULL == tp)
 			{
-				ret = n->trans_packet;
+				this->ptpl = this->trans_packet_list;
+			}
+			else
+			{
+				this->ptpl = this->ptpl->next;
+			}
+			if (NULL != this->ptpl)
+			{
+				ret = this->ptpl->trans_packet;
 			}
 		}
 		return ret;
+	}
+	static struct espress_stream_trans_packet *_get_first_trans_packet(struct espress_stream_trans_packet_interface *this)
+	{
+		return _get_next_trans_packet(this, NULL);
 	}
 #endif
 
@@ -784,9 +784,16 @@ static i_t _send_connect(struct espress_stream_trans_packet *this,
 	}
 	else
 	{
+#		if !_IS_CONNECTION_ID_RANDOM
+			espress_stream_uint32_assign(u, espress_stream_uint32_0);
+#		endif
 		for ( ; ; )
 		{
-			espress_stream_rand->get((b_t *)u, sizeof(*u));
+#			if _IS_CONNECTION_ID_RANDOM
+				espress_stream_rand->get((b_t *)u, sizeof(*u));
+#			else
+				espress_stream_uint32_add(u, espress_stream_uint32_1);
+#			endif
 			if (espress_stream_uint32_eq(u, espress_stream_uint32_0) ||
 				espress_stream_uint32_eq(u, espress_stream_uint32_max))
 			{
