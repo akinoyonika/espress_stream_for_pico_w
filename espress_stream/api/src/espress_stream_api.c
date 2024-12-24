@@ -100,7 +100,7 @@ struct session {
 	int is_in_progress;
 	volatile int is_broken;
 #	if ESPRESS_STREAM_API_IS_THREAD_ENABLED
-		struct thread_info yield_thread[ESPRESS_STREAM_TRANS_PACKET_NUM_YIELD];
+		struct thread_info yield_thread[ESPRESS_STREAM_SESSION_NUM_YIELD];
 #	endif
 };
 
