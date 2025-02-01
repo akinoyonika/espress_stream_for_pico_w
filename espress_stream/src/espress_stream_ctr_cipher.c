@@ -21,7 +21,6 @@ static void _initialize(struct espress_stream_ctr_cipher *this, b_t const *nonce
 	espress_stream_block_cipher->initialize(this->block_cipher, key);
 	memcpy(this->counter, nonce, ESPRESS_STREAM_CTR_CIPHER_NONCE_SIZE);
 	memcpy(this->counter + ESPRESS_STREAM_CTR_CIPHER_NONCE_SIZE, init_counter, ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE - ESPRESS_STREAM_CTR_CIPHER_NONCE_SIZE);
-	espress_stream_uint32_htob((struct espress_stream_uint32 *)(this->counter + ESPRESS_STREAM_CTR_CIPHER_NONCE_SIZE));
 	this->total_size = 0;
 }
 
@@ -45,39 +44,9 @@ static void _encrypt(struct espress_stream_ctr_cipher *this, b_t *text, u_t text
 		if (0 == u)
 		{
 			memcpy(this->cipher_counter, this->counter, ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE);
+			espress_stream_uint32_htob((struct espress_stream_uint32 *)(this->cipher_counter + ESPRESS_STREAM_CTR_CIPHER_NONCE_SIZE));
 			espress_stream_block_cipher->encrypt(this->block_cipher, this->cipher_counter);
-			espress_stream_uint32_btoh((struct espress_stream_uint32 *)(this->counter + ESPRESS_STREAM_CTR_CIPHER_NONCE_SIZE));
 			espress_stream_uint32_add((struct espress_stream_uint32 *)(this->counter + ESPRESS_STREAM_CTR_CIPHER_NONCE_SIZE), espress_stream_uint32_1);
-			espress_stream_uint32_htob((struct espress_stream_uint32 *)(this->counter + ESPRESS_STREAM_CTR_CIPHER_NONCE_SIZE));
-			if (p <= te)
-			{
-#				if 4 == ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE
-					espress_stream_uint32_xor((struct espress_stream_uint32 *)t, (struct espress_stream_uint32 *)this->cipher_counter);
-					t += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					this->total_size += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					continue;
-#				elif 8 == ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE
-					espress_stream_uint64_xor((struct espress_stream_uint64 *)t, (struct espress_stream_uint64 *)this->cipher_counter);
-					t += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					this->total_size += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					continue;
-#				elif 16 == ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE
-					espress_stream_uint128_xor((struct espress_stream_uint128 *)t, (struct espress_stream_uint128 *)this->cipher_counter);
-					t += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					this->total_size += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					continue;
-#				elif 32 == ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE
-					espress_stream_uint256_xor((struct espress_stream_uint256 *)t, (struct espress_stream_uint256 *)this->cipher_counter);
-					t += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					this->total_size += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					continue;
-#				elif 64 == ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE
-					espress_stream_uint512_xor((struct espress_stream_uint512 *)t, (struct espress_stream_uint512 *)this->cipher_counter);
-					t += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					this->total_size += ESPRESS_STREAM_CTR_CIPHER_BLOCK_SIZE;
-					continue;
-#				endif
-			}
 		}
 		if (te < p)
 		{

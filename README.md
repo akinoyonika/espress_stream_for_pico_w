@@ -21,9 +21,12 @@ OSは未使用(ベア環境)です。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20241224.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20241224.tar.gz)
+- [espress_stream_for_pico_w.20250201.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250201.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20250201.tar.gz (1.8-1)
+: - espress_streamのバージョンアップに対応した。
 
 espress_stream_for_pico_w.20241224.tar.gz (1.7-1)
 : - espress_streamのバージョンアップに対応した。
