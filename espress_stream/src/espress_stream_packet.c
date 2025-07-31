@@ -195,8 +195,7 @@ static b_t *_envelope_payload(struct espress_stream_packet *this);
 static u_t _envelope_payload_size(struct espress_stream_packet *this);
 static void _encode(struct espress_stream_packet *this, i_t is_server, struct espress_stream_key *key);
 static void _decode(struct espress_stream_packet *this, i_t is_server, struct espress_stream_key *key);
-static void _abort_encode(struct espress_stream_packet *this);
-static void _abort_decode(struct espress_stream_packet *this);
+static void _abort(struct espress_stream_packet *this);
 static void _yield(struct espress_stream_packet *this, struct espress_stream_uint32 const *timeout);
 static void _yield_break(struct espress_stream_packet *this);
 
@@ -226,8 +225,8 @@ struct espress_stream_packet_ops const espress_stream_packet[] =
 	_envelope_payload_size,
 	_encode,
 	_decode,
-	_abort_encode,
-	_abort_decode,
+	_abort,
+	_abort,
 	_yield,
 	_yield_break
 }};
@@ -349,6 +348,8 @@ static i_t _initialize(struct espress_stream_packet *this, struct espress_stream
 
 	this->id = NULL;
 
+	this->is_in_progress = 0;
+
 MUTEX_INIT_FAIL_EXIT:
 	if (0 != ret) espress_stream_event->finalize(this->event);
 EVENT_INIT_FAIL_EXIT:
@@ -468,8 +469,14 @@ static void _encode(struct espress_stream_packet *this, i_t is_server, struct es
 {
 	espress_stream_mutex->lock(this->mutex);
 
+	if (this->is_in_progress)
+	{
+		goto EXIT;
+	}
+
 	if (0 == this->data_size)
 	{
+		this->is_in_progress = 1;
 		if (is_server)
 		{
 			this->packet_type_connect = espress_stream_packet_type_server_connect;
@@ -490,6 +497,8 @@ static void _encode(struct espress_stream_packet *this, i_t is_server, struct es
 		espress_stream_event->set(this->outer_event, ESPRESS_STREAM_EVENT_PACKET_ENCODE_RESULT);
 	}
 
+EXIT:
+
 	espress_stream_mutex->unlock(this->mutex);
 }
 
@@ -497,8 +506,14 @@ static void _decode(struct espress_stream_packet *this, i_t is_server, struct es
 {
 	espress_stream_mutex->lock(this->mutex);
 
+	if (this->is_in_progress)
+	{
+		goto EXIT;
+	}
+
 	if ((0 < this->data_size) && (ESPRESS_STREAM_TRANS_RING_INVALID_DATA_SIZE != this->data_size))
 	{
+		this->is_in_progress = 1;
 		if (is_server)
 		{
 			this->packet_type_connect = espress_stream_packet_type_server_connect;
@@ -519,33 +534,20 @@ static void _decode(struct espress_stream_packet *this, i_t is_server, struct es
 		espress_stream_event->set(this->outer_event, ESPRESS_STREAM_EVENT_PACKET_DECODE_RESULT);
 	}
 
-	espress_stream_mutex->unlock(this->mutex);
-}
-
-static void _abort_encode(struct espress_stream_packet *this)
-{
-	espress_stream_mutex->lock(this->mutex);
-
-	if (0 == this->data_size)
-	{
-		this->data_size = ESPRESS_STREAM_TRANS_RING_INVALID_DATA_SIZE;
-	}
-	this->key = NULL;
+EXIT:
 
 	espress_stream_mutex->unlock(this->mutex);
 }
 
-static void _abort_decode(struct espress_stream_packet *this)
+static void _abort(struct espress_stream_packet *this)
 {
-	espress_stream_mutex->lock(this->mutex);
-
-	if ((0 < this->data_size) && (ESPRESS_STREAM_TRANS_RING_INVALID_DATA_SIZE != this->data_size))
+	int is_in_progress;
+	do
 	{
-		this->data_size = ESPRESS_STREAM_TRANS_RING_INVALID_DATA_SIZE;
-	}
-	this->key = NULL;
-
-	espress_stream_mutex->unlock(this->mutex);
+		espress_stream_mutex->lock(this->mutex);
+		is_in_progress = this->is_in_progress;
+		espress_stream_mutex->unlock(this->mutex);
+	} while (is_in_progress);
 }
 
 static void _yield(struct espress_stream_packet *this, struct espress_stream_uint32 const *timeout)
@@ -597,7 +599,7 @@ static void _yield(struct espress_stream_packet *this, struct espress_stream_uin
 					else
 					{
 						k = this->key;
-						v = _counter_number(this);
+						v = counter_number(this);
 					}
 					if (espress_stream_key->get(k, mac_key, cipher_key, v) && espress_stream_key->update(k, v))
 					{
@@ -632,6 +634,7 @@ static void _yield(struct espress_stream_packet *this, struct espress_stream_uin
 			}
 			this->data_size = data_size;
 		}
+		this->is_in_progress = 0;
 		espress_stream_event->set(this->outer_event, ESPRESS_STREAM_EVENT_PACKET_ENCODE_RESULT);
 	}
 
@@ -653,7 +656,7 @@ static void _yield(struct espress_stream_packet *this, struct espress_stream_uin
 				{
 					k = this->key;
 					v = _v;
-					espress_stream_uint32_assign(_v, _counter_number(this));
+					espress_stream_uint32_assign(_v, counter_number(this));
 					espress_stream_uint32_ntoh(_v);
 				}
 				if (espress_stream_key->get(k, mac_key, cipher_key, v))
@@ -697,6 +700,7 @@ static void _yield(struct espress_stream_packet *this, struct espress_stream_uin
 			}
 			this->data_size = data_size;
 		}
+		this->is_in_progress = 0;
 		espress_stream_event->set(this->outer_event, ESPRESS_STREAM_EVENT_PACKET_DECODE_RESULT);
 	}
 

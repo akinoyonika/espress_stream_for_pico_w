@@ -21,53 +21,86 @@ OSは未使用(ベア環境)です。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20250201.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250201.tar.gz)
+- [espress_stream_for_pico_w.20250731.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250731.tar.gz)
 
 <details><summary>変更履歴</summary>
 
+espress_stream_for_pico_w.20250731.tar.gz (1.9-1)
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
+
 espress_stream_for_pico_w.20250201.tar.gz (1.8-1)
-: - espress_streamのバージョンアップに対応した。
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20241224.tar.gz (1.7-1)
-: - espress_streamのバージョンアップに対応した。
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20241214.tar.gz (1.6-1)
-: - espress_streamのバージョンアップに対応した。
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240826.tar.gz (1.5-1)
-: - 乱数生成にpico_randを使用するようにした。
+: <ul>
+    <li>乱数生成にpico_randを使用するようにした。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240825.tar.gz (1.5-1)
-: - ドキュメントの修正。
-- <tt>espress_stream_dgram.c</tt>を修正。
+: <ul>
+    <li>ドキュメントの修正。</li>
+    <li><tt>espress_stream_dgram.c</tt>を修正。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240803.tar.gz (1.4-1)
-: - espress_streamのバージョンアップに対応した。
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240704.tar.gz (1.3-0)
-: - espress_streamのバージョンアップに対応した。
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240117.tar.gz (1.2-0)
-: - espress_streamのバージョンアップに対応した。
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240115.tar.gz (1.1-0)
-: - espress_streamのコードドキュメント変更を反映。
+: <ul>
+    <li>espress_streamのコードドキュメント変更を反映。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240112.tar.gz (1.1-0)
-: - espress_streamのバージョンアップに対応した。
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240110.tar.gz (1.0-0)
-: - espress_streamのバージョンアップに対応した。
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240108.tar.gz (0.9-0)
-: - ドキュメントの修正。
+: <ul>
+    <li>ドキュメントの修正。</li>
+  </ul>
 
 espress_stream_for_pico_w.20240101.tar.gz (0.9-0)
-: - 設定値の一部が実験用の値のままになっていたので元の値に修正。
- - ドキュメントの修正。
+: <ul>
+    <li>設定値の一部が実験用の値のままになっていたので元の値に修正。</li>
+    <li>ドキュメントの修正。</li>
+  </ul>
 
 espress_stream_for_pico_w.20231231.tar.gz (0.9-0)
-: - 初版。
+: <ul>
+    <li>初版。</li>
+  </ul>
 
 </details>
 

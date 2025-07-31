@@ -896,6 +896,7 @@ static void _post_process_recv_ack(struct espress_stream_session *this,
 			espress_stream_trans_packet->dac(this->trans_packet),
 			this->send_window))
 		{
+			espress_stream_trans_packet->tell_over_dac(this->trans_packet);
 			_tell_fast_retransmit_cong_avoid(this->cong_avoid);
 			espress_stream_event->set(this->event, ESPRESS_STREAM_EVENT_TRANS_PACKET_SEND);
 			this->fast_retransmit_count++;
@@ -1537,9 +1538,9 @@ static i_t _yield_recv_recv_established(struct espress_stream_session *this)
 					espress_stream_ring_buffer->en(this->recv_window->buffer, dst_send_data_size);
 					espress_stream_event->set(this->outer_event, ESPRESS_STREAM_EVENT_SESSION_RECV);
 				}
-				this->is_ack_ready = 1;
-				espress_stream_event->set(this->event, ESPRESS_STREAM_EVENT_TRANS_PACKET_SEND);
 			}
+			this->is_ack_ready = 1;
+			espress_stream_event->set(this->event, ESPRESS_STREAM_EVENT_TRANS_PACKET_SEND);
 			goto EXIT;
 		}
 #	endif
@@ -1554,6 +1555,7 @@ static i_t _yield_recv_recv_established(struct espress_stream_session *this)
 	}
 	if (0 == ret)
 	{
+		espress_stream_timer->cancel(this->recv_session_timer);
 		this->recv_state = _CLOSED;
 		espress_stream_event->set(this->outer_event, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT);
 		goto EXIT;

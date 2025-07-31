@@ -1294,9 +1294,8 @@ EXIT:
 	return ret;
 }
 
-static int local_send(struct session *this, void const *data, unsigned *data_size)
+static void local_send(struct session *this, void const *data, unsigned *data_size)
 {
-	int ret = -1;
 	u_t u;
 	u_t v;
 	b_t *d;
@@ -1328,7 +1327,7 @@ static int local_send(struct session *this, void const *data, unsigned *data_siz
 
 		if (0 < d_size) {
 			espress_stream_ring_buffer->en(this->send_ring_buffer, d_size);
-			ret = espress_stream_session->send(this->session);
+			espress_stream_session->send(this->session);
 		}
 	}
 
@@ -1336,16 +1335,12 @@ static int local_send(struct session *this, void const *data, unsigned *data_siz
 
 EXIT:
 
-	if (ret == -1) {
-		ret = espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR) ? 1 : 0;
-	}
-
-	return ret;
+	return;
 }
 
 int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsigned timeout)
 {
-	int ret;
+	int ret = 0;
 	struct espress_stream_uint32 t[1];
 	struct espress_stream_uint32 u[1];
 	unsigned v;
@@ -1369,8 +1364,8 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 	espress_stream_event_flags->compo(this->flags, f);
 	espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_SEND);
 	v = *data_size;
-	ret = local_send(this, data, &v);
-	if ((ret == 0) && (v < *data_size)) {
+	local_send(this, data, &v);
+	if (v < *data_size) {
 		for ( ; ; ) {
 			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) {
 				ret = 1;
@@ -1383,9 +1378,9 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 					v = 0;
 				}
 				w = *data_size - v;
-				ret = local_send(this, ((b_t *)data) + v, &w);
+				local_send(this, ((b_t *)data) + v, &w);
 				v += w;
-				if ((ret != 0) || (v == *data_size)) {
+				if (v == *data_size) {
 					break;
 				}
 			}
@@ -1511,9 +1506,8 @@ EXIT:
 	return ret;
 }
 
-static int local_recv(struct session *this, void *data, unsigned *data_size)
+static void local_recv(struct session *this, void *data, unsigned *data_size)
 {
-	int ret = -1;
 	u_t u;
 	u_t v;
 	b_t *d;
@@ -1545,9 +1539,7 @@ static int local_recv(struct session *this, void *data, unsigned *data_size)
 
 		if (0 < d_size) {
 			espress_stream_ring_buffer->de(this->recv_ring_buffer, d_size);
-			if (!espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT)) {
-				ret = espress_stream_session->recv(this->session);
-			}
+			espress_stream_session->recv(this->session);
 		}
 	}
 
@@ -1555,16 +1547,12 @@ static int local_recv(struct session *this, void *data, unsigned *data_size)
 
 EXIT:
 
-	if (ret == -1) {
-		ret = espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR) ? 1 : 0;
-	}
-
-	return ret;
+	return;
 }
 
 int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned timeout)
 {
-	int ret;
+	int ret = 0;
 	struct espress_stream_uint32 t[1];
 	struct espress_stream_uint32 u[1];
 	unsigned v;
@@ -1587,8 +1575,8 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
 	espress_stream_event_flags->compo(this->flags, f);
 	espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
 	v = *data_size;
-	ret = local_recv(this, data, &v);
-	if ((ret == 0) && (v == 0)) {
+	local_recv(this, data, &v);
+	if (v == 0) {
 		for ( ; ; ) {
 			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) {
 				ret = 1;
@@ -1598,8 +1586,8 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
 			if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV)) {
 				espress_stream_event_flags->reset(this->flags, ESPRESS_STREAM_EVENT_SESSION_RECV);
 				v = *data_size;
-				ret = local_recv(this, data, &v);
-				if ((ret != 0) || (0 < v)) {
+				local_recv(this, data, &v);
+				if (0 < v) {
 					break;
 				}
 			} else if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_DISCONNECT_DETECT)) {

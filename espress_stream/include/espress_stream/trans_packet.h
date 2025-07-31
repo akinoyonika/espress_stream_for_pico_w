@@ -137,6 +137,7 @@ struct espress_stream_trans_packet_ops
 	void (*rto)(struct espress_stream_trans_packet *this, struct espress_stream_uint32 *rto);
 	void (*tell_timeout)(struct espress_stream_trans_packet *this);
 	u_t (*dac)(struct espress_stream_trans_packet *this);
+	void (*tell_over_dac)(struct espress_stream_trans_packet *this);
 	void (*yield[ESPRESS_STREAM_TRANS_PACKET_NUM_YIELD + 1])(struct espress_stream_trans_packet_interface *this, struct espress_stream_uint32 const *timeout);
 	void (*yield_break[ESPRESS_STREAM_TRANS_PACKET_NUM_YIELD + 1])(struct espress_stream_trans_packet_interface *this);
 };

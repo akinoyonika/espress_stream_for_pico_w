@@ -46,6 +46,8 @@ struct espress_stream_packet
 	struct espress_stream_uint16 const *packet_type_envelope;
 
 	void *id;
+
+	volatile int is_in_progress;
 };
 
 struct espress_stream_packet_ops

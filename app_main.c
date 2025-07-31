@@ -181,11 +181,11 @@ struct file_tx_attr {
 
 		printf("\x1b[24C");
 		if (fin_state == -1) {
-			printf("[XXXXXXXXXXXXXXXX(XXXXXXXX)/%016llu]\n", file_size);
+			printf("[XXXXXXXXXXXXXXXX(XXXXXXXX)/%016"PRIu64"]\n", file_size);
 		} else if (fin_state == 1) {
-			printf("[OOOOOOOOOOOOOOOO(OOOOOOOO)/%016llu]\n", file_size);
+			printf("[OOOOOOOOOOOOOOOO(OOOOOOOO)/%016"PRIu64"]\n", file_size);
 		} else {
-			printf("[%016llu(%08u)/%016llu]\n", progress, bufdsz, file_size);
+			printf("[%016"PRIu64"(%08u)/%016"PRIu64"]\n", progress, bufdsz, file_size);
 		}
 		if (fin_state == 0) {
 			printf("rtt=%08u, ", rtt);
@@ -394,9 +394,6 @@ static int conn(struct file_tx_attr *attr,
 	if (i == 0) {
 		for (i = -1, t = 0 ; *is_running && (i == -1) ; ) {
 			t = timeout - t;
-			if (1000000 < t) {
-				t = 1000000;
-			}
 			i = espress_stream_connect_result(*sid, t);
 			if (0 < i) {
 				ex_param->send_connect_payload_param = attr;
@@ -440,9 +437,6 @@ static int send_recv(struct file_tx_attr *attr,
 
 	for (i = -1, j = -1, t = 0 ; *is_running && (i == -1) && (j == -1) ; ) {
 		t = timeout - t;
-		if (1000000 < t) {
-			t = 1000000;
-		}
 		espress_stream_wait_any(sid, ESPRESS_STREAM_EVENT_SEND | ESPRESS_STREAM_EVENT_RECV, t);
 		i = espress_stream_send(sid, send_data, send_data_size, 0);
 		j = espress_stream_recv(sid, recv_data, recv_data_size, 0);
@@ -471,9 +465,6 @@ static int flush_recv(struct file_tx_attr *attr,
 	espress_stream_flush(sid, 0);
 	for (i = -1, j = -1, t = 0 ; *is_running && (i == -1) && (j == -1) ; ) {
 		t = timeout - t;
-		if (1000000 < t) {
-			t = 1000000;
-		}
 		espress_stream_wait_any(sid, ESPRESS_STREAM_EVENT_FLUSH | ESPRESS_STREAM_EVENT_RECV, t);
 		i = espress_stream_flush(sid, 0);
 		j = espress_stream_recv(sid, recv_data, recv_data_size, 0);

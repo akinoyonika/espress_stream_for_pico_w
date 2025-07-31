@@ -81,6 +81,7 @@ static i_t _rtt(struct espress_stream_trans_packet *this, struct espress_stream_
 static void _rto(struct espress_stream_trans_packet *this, struct espress_stream_uint32 *rto);
 static void _tell_timeout(struct espress_stream_trans_packet *this);
 static u_t _dac(struct espress_stream_trans_packet *this);
+static void _tell_over_dac(struct espress_stream_trans_packet *this);
 
 #define _SEND_PACKET_YIELD_PROTO(count) static void _send_packet_yield_ ## count(struct espress_stream_trans_packet_interface *this, struct espress_stream_uint32 const *timeout);
 #define ESPRESS_STREAM_MACRO_REPEAT (ESPRESS_STREAM_SEND_QUEUE_SIZE)
@@ -140,6 +141,7 @@ struct espress_stream_trans_packet_ops const espress_stream_trans_packet[] =
 	_rto,
 	_tell_timeout,
 	_dac,
+	_tell_over_dac,
 	{
 #		define _SEND_PACKET_YIELD(count) _send_packet_yield_ ## count,
 #		define ESPRESS_STREAM_MACRO_REPEAT (ESPRESS_STREAM_SEND_QUEUE_SIZE)
@@ -444,6 +446,7 @@ static i_t _initialize(struct espress_stream_trans_packet_interface *this,
 			ret = 1;
 			goto PACKET_INIT_FAIL_EXIT;
 		}
+		p->id = NULL;
 		p->data_size = espress_stream_dgram->mtu(this->dgram);
 		espress_stream_trans_ring->en(this->recv_ring, 1);
 	}
@@ -616,22 +619,30 @@ static void _final_duplicate_ack_count(struct espress_stream_trans_packet_duplic
 }
 
 static void _check_duplicate_ack_count(struct espress_stream_trans_packet_duplicate_ack_count *this,
-	struct espress_stream_uint32 const *prev_counter_number,
 	struct espress_stream_uint32 const *prev_window_address,
-	struct espress_stream_uint32 const *counter_number,
-	struct espress_stream_uint32 const *window_address)
+	struct espress_stream_uint32 const *window_address,
+	i_t is_ack_true)
 {
 	if (espress_stream_uint32_eq(prev_window_address, window_address))
 	{
-		if (!espress_stream_uint32_eq(prev_counter_number, counter_number))
+		if (is_ack_true)
 		{
 			this->count++;
+			if (0 == this->count)
+			{
+				this->count--;
+			}
 		}
 	}
 	else
 	{
 		this->count = 0;
 	}
+}
+
+static void _tell_over_dupulicate_ack_count(struct espress_stream_trans_packet_duplicate_ack_count *this)
+{
+	this->count = 0;
 }
 
 static i_t _uint32_lt(struct espress_stream_uint32 const *this, struct espress_stream_uint32 const *n)
@@ -723,7 +734,8 @@ static void _close(struct espress_stream_trans_packet *this)
 		p = (struct espress_stream_packet *)espress_stream_trans_ring->tail(this->interface->send_ring, u)[0];
 		if (p->id == (void *)this)
 		{
-			espress_stream_packet->yield(p, espress_stream_uint32_0);
+
+			espress_stream_packet->abort_encode(p);
 			p->id = NULL;
 		}
 	}
@@ -1397,24 +1409,26 @@ static i_t _recv_envelope(struct espress_stream_trans_packet *this,
 		espress_stream_uint32_add(send_data_address, u);
 	}
 
-	if (is_first && (0 < (payload_size_var + add_payload_size_var)))
+	if ((is_first) && (0 < packet_payload_size))
 	{
 		espress_stream_uint32_assign(this->src_receive_counter_number, this->dst_counter_number);
 
-		*is_ack_true = !espress_stream_uint32_eq(this->dst_receive_counter_number, receive_counter_number);
-
-		if (*is_ack_true)
+		if (0 < (payload_size_var + add_payload_size_var))
 		{
-			_stop_rto_measurement(this->rto_measurement, receive_counter_number);
-		}
-		_check_duplicate_ack_count(this->duplicate_ack_count,
-			this->dst_receive_counter_number,
-			this->dst_receive_window_address,
-			receive_counter_number,
-			receive_window_address);
+			*is_ack_true = !espress_stream_uint32_eq(this->dst_receive_counter_number, receive_counter_number);
 
-		espress_stream_uint32_assign(this->dst_receive_counter_number, receive_counter_number);
-		espress_stream_uint32_assign(this->dst_receive_window_address, receive_window_address);
+			if (*is_ack_true)
+			{
+				_stop_rto_measurement(this->rto_measurement, receive_counter_number);
+			}
+			_check_duplicate_ack_count(this->duplicate_ack_count,
+				this->dst_receive_window_address,
+				receive_window_address,
+				*is_ack_true);
+
+			espress_stream_uint32_assign(this->dst_receive_counter_number, receive_counter_number);
+			espress_stream_uint32_assign(this->dst_receive_window_address, receive_window_address);
+		}
 	}
 
 	memcpy(this->dst_address, p->address, sizeof(*(this->dst_address)));
@@ -1533,10 +1547,9 @@ static i_t _recv_ack(struct espress_stream_trans_packet *this,
 		_stop_rto_measurement(this->rto_measurement, receive_counter_number);
 	}
 	_check_duplicate_ack_count(this->duplicate_ack_count,
-		this->dst_receive_counter_number,
 		this->dst_receive_window_address,
-		receive_counter_number,
-		receive_window_address);
+		receive_window_address,
+		*is_ack_true);
 
 	espress_stream_uint32_assign(this->dst_receive_counter_number, receive_counter_number);
 	espress_stream_uint32_assign(this->dst_receive_window_address, receive_window_address);
@@ -1650,6 +1663,7 @@ static void _rto(struct espress_stream_trans_packet *this, struct espress_stream
 static void _tell_timeout(struct espress_stream_trans_packet *this)
 {
 	espress_stream_mutex->lock(this->interface->mutex);
+	_tell_over_dupulicate_ack_count(this->duplicate_ack_count);
 	_tell_timeout_rto_measurement(this->rto_measurement);
 	espress_stream_mutex->unlock(this->interface->mutex);
 }
@@ -1661,6 +1675,13 @@ static u_t _dac(struct espress_stream_trans_packet *this)
 	ret = this->duplicate_ack_count->count;
 	espress_stream_mutex->unlock(this->interface->mutex);
 	return ret;
+}
+
+static void _tell_over_dac(struct espress_stream_trans_packet *this)
+{
+	espress_stream_mutex->lock(this->interface->mutex);
+	_tell_over_dupulicate_ack_count(this->duplicate_ack_count);
+	espress_stream_mutex->unlock(this->interface->mutex);
 }
 
 #define _SEND_PACKET_YIELD_FUNC(count) static void _send_packet_yield_ ## count(struct espress_stream_trans_packet_interface *this, struct espress_stream_uint32 const *timeout) \
@@ -1716,21 +1737,18 @@ static void _this_yield(struct espress_stream_trans_packet_interface *this, stru
 		while (NULL != espress_stream_trans_ring->head(this->recv_ring, 0))
 		{
 			p = (struct espress_stream_packet *)(espress_stream_trans_ring->head(this->recv_ring, 0)[0]);
-			if ((0 == p->data_size) || (ESPRESS_STREAM_TRANS_RING_INVALID_DATA_SIZE == p->data_size))
+			if ((NULL != p->id) && (ESPRESS_STREAM_TRANS_RING_INVALID_DATA_SIZE != p->data_size))
 			{
-				if (NULL == p->id)
-				{
-					p->data_size = espress_stream_dgram->mtu(this->dgram);
-					espress_stream_trans_ring->en(this->recv_ring, 1);
-					continue;
-				}
-				else
+				if (0 == p->data_size)
 				{
 					trans_packet = (struct espress_stream_trans_packet *)(p->id);
 					espress_stream_event->set(trans_packet->outer_event, ESPRESS_STREAM_EVENT_TRANS_PACKET_RECV);
 				}
+				break;
 			}
-			break;
+			p->id = NULL;
+			p->data_size = espress_stream_dgram->mtu(this->dgram);
+			espress_stream_trans_ring->en(this->recv_ring, 1);
 		}
 		espress_stream_trans_ring->recv_request(this->recv_ring);
 	}
@@ -1841,8 +1859,12 @@ static void _this_yield(struct espress_stream_trans_packet_interface *this, stru
 			if (NULL == p->id)
 			{
 				p->data_size = ESPRESS_STREAM_TRANS_RING_INVALID_DATA_SIZE;
+				espress_stream_event->set(this->event, ESPRESS_STREAM_EVENT_PACKET_DECODE_RESULT);
 			}
-			espress_stream_packet->decode(p, !is_server, key);
+			else
+			{
+				espress_stream_packet->decode(p, !is_server, key);
+			}
 		}
 	}
 	if (espress_stream_event_flags->is_set(flags, ESPRESS_STREAM_EVENT_NONE))
