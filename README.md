@@ -10,7 +10,7 @@ linux用とは以下のような違いがあります。
 - 排他制御、同期機構関連部のダミー実装による無効化もしくは疑似動作化。
 - lwIPによるデータグラム通信部。
 - SDKのライブラリーによるティック生成部。
-- ティックを利用した動作確認用の乱数生成部。
+- SDKのライブラリーによる乱数生成部。
 
 その他、小リソース向けに設定値を変更しています。
 
@@ -21,9 +21,14 @@ OSは未使用(ベア環境)です。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20250731.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250731.tar.gz)
+- [espress_stream_for_pico_w.20250805.tar.gz](http://akino-yo.blue.coocan.jp/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250805.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20250805.tar.gz (1.9-1)
+: <ul>
+    <li>前パッケージでバージョン番号の更新を忘れていたので、更新しパッケージ再作成。</li>
+  </ul>
 
 espress_stream_for_pico_w.20250731.tar.gz (1.9-1)
 : <ul>
