@@ -682,7 +682,12 @@ int espress_stream_begin_interface(void **ifd, struct sockaddr_storage const *ad
 	struct interface *this;
 	struct espress_stream_dgram_address dgram_address[1] = {0};
 
+	sched_yield();
 	espress_stream_mutex->lock(local_mutex);
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		interface_yield();
+		session_yield();
+#	endif
 
 	i = new_interface();
 	if (i == NULL) {
@@ -726,7 +731,12 @@ void espress_stream_end_interface(void *ifd)
 {
 	struct interface *this;
 
+	sched_yield();
 	espress_stream_mutex->lock(local_mutex);
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		interface_yield();
+		session_yield();
+#	endif
 
 	this = get_interface(ifd);
 
@@ -907,7 +917,12 @@ int espress_stream_begin_session(void **sid, void *ifd, int is_server, struct es
 	int j;
 	struct session *this;
 
+	sched_yield();
 	espress_stream_mutex->lock(local_mutex);
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		interface_yield();
+		session_yield();
+#	endif
 
 	i = new_session(ifd);
 	if (i == NULL) {
@@ -969,7 +984,12 @@ void espress_stream_end_session(void *sid)
 {
 	struct session *this;
 
+	sched_yield();
 	espress_stream_mutex->lock(local_mutex);
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		interface_yield();
+		session_yield();
+#	endif
 
 	this = get_session(sid);
 
@@ -997,6 +1017,14 @@ int espress_stream_connect(void *sid, struct sockaddr_storage const *address)
 {
 	int ret;
 	struct session *this = get_session(sid);
+
+	sched_yield();
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		espress_stream_mutex->lock(local_mutex);
+		interface_yield();
+		session_yield();
+		espress_stream_mutex->unlock(local_mutex);
+#	endif
 
 	espress_stream_mutex->lock(this->mutex);
 
@@ -1063,6 +1091,14 @@ int espress_stream_connect_result(void *sid, unsigned timeout)
 	struct session *this = get_session(sid);
 	struct espress_stream_uint32 start_time[1];
 	struct espress_stream_uint32 timeout_time[1];
+
+	sched_yield();
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		espress_stream_mutex->lock(local_mutex);
+		interface_yield();
+		session_yield();
+		espress_stream_mutex->unlock(local_mutex);
+#	endif
 
 	espress_stream_mutex->lock(this->mutex);
 
@@ -1142,6 +1178,14 @@ int espress_stream_connect_detect(void *sid, unsigned timeout)
 	struct espress_stream_uint32 start_time[1];
 	struct espress_stream_uint32 timeout_time[1];
 
+	sched_yield();
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		espress_stream_mutex->lock(local_mutex);
+		interface_yield();
+		session_yield();
+		espress_stream_mutex->unlock(local_mutex);
+#	endif
+
 	espress_stream_mutex->lock(this->mutex);
 
 	if ((this->src_state != INIT) || this->is_in_progress) {
@@ -1205,6 +1249,14 @@ int espress_stream_disconnect(void *sid)
 	int ret;
 	struct session *this = get_session(sid);
 
+	sched_yield();
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		espress_stream_mutex->lock(local_mutex);
+		interface_yield();
+		session_yield();
+		espress_stream_mutex->unlock(local_mutex);
+#	endif
+
 	espress_stream_mutex->lock(this->mutex);
 
 	if ((this->src_state != CONNECTED) || this->is_in_progress) {
@@ -1238,6 +1290,14 @@ int espress_stream_disconnect_result(void *sid, unsigned timeout)
 	struct session *this = get_session(sid);
 	struct espress_stream_uint32 start_time[1];
 	struct espress_stream_uint32 timeout_time[1];
+
+	sched_yield();
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		espress_stream_mutex->lock(local_mutex);
+		interface_yield();
+		session_yield();
+		espress_stream_mutex->unlock(local_mutex);
+#	endif
 
 	espress_stream_mutex->lock(this->mutex);
 
@@ -1350,6 +1410,14 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 	struct espress_stream_uint32 start_time[1];
 	struct espress_stream_uint32 timeout_time[1];
 
+	sched_yield();
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		espress_stream_mutex->lock(local_mutex);
+		interface_yield();
+		session_yield();
+		espress_stream_mutex->unlock(local_mutex);
+#	endif
+
 	espress_stream_mutex->lock(this->mutex);
 
 	if ((this->src_state != CONNECTED) || this->is_in_progress || (*data_size == 0)) {
@@ -1441,6 +1509,14 @@ int espress_stream_flush(void *sid, unsigned timeout)
 	struct session *this = get_session(sid);
 	struct espress_stream_uint32 start_time[1];
 	struct espress_stream_uint32 timeout_time[1];
+
+	sched_yield();
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		espress_stream_mutex->lock(local_mutex);
+		interface_yield();
+		session_yield();
+		espress_stream_mutex->unlock(local_mutex);
+#	endif
 
 	espress_stream_mutex->lock(this->mutex);
 
@@ -1560,6 +1636,14 @@ int espress_stream_recv(void *sid, void *data, unsigned *data_size, unsigned tim
 	struct session *this = get_session(sid);
 	struct espress_stream_uint32 start_time[1];
 	struct espress_stream_uint32 timeout_time[1];
+
+	sched_yield();
+#	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
+		espress_stream_mutex->lock(local_mutex);
+		interface_yield();
+		session_yield();
+		espress_stream_mutex->unlock(local_mutex);
+#	endif
 
 	espress_stream_mutex->lock(this->mutex);
 
@@ -1725,8 +1809,8 @@ int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num
 			espress_stream_event_flags->is_set((s)->flags, ESPRESS_STREAM_EVENT_NONE))                         \
 	)
 
+	sched_yield();
 #	if !ESPRESS_STREAM_API_IS_THREAD_ENABLED
-		sched_yield();
 		espress_stream_mutex->lock(local_mutex);
 		interface_yield();
 		session_yield();

@@ -38,7 +38,9 @@ struct espress_stream_dgram
 	u_t num_rcvd_buffer;
 	i_t recv_errno;
 
-	volatile i_t udp_recvfrom;
+	struct pbuf *recv_pbuf;
+	ip_addr_t recv_ipaddr[1];
+	u16_t recv_port;
 };
 
 struct espress_stream_dgram_ops

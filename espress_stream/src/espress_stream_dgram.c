@@ -35,23 +35,35 @@ struct espress_stream_dgram_ops const espress_stream_dgram[] =
 	_recv_yield_break
 }};
 
-static void _udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
+static void _udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t const *addr, u16_t port)
 {
 	struct espress_stream_dgram *this = (struct espress_stream_dgram *)arg;
-	espress_stream_mutex->lock(this->recv_mutex);
-	if ((ERR_OK != this->udp_recvfrom) && (0 < this->num_recv_buffer) && (0 == this->num_rcvd_buffer))
+	if (NULL != this->recv_pbuf)
 	{
-		if (p->len < this->recv_buffer[0]->data_size)
-		{
-			this->recv_buffer[0]->data_size = p->len;
-		}
-		memcpy(this->recv_buffer[0]->data, p->payload, this->recv_buffer[0]->data_size);
-		memcpy(this->recv_buffer[0]->address->storage->address, addr, sizeof(*(this->recv_buffer[0]->address->storage->address)));
-		this->recv_buffer[0]->address->storage->port = port;
-		this->udp_recvfrom = ERR_OK;
+		pbuf_free(this->recv_pbuf);
 	}
-	pbuf_free(p);
-	espress_stream_mutex->unlock(this->recv_mutex);
+	this->recv_pbuf = p;
+	memcpy(this->recv_ipaddr, addr, sizeof(*this->recv_ipaddr));
+	this->recv_port = port;
+}
+
+static err_t _udp_recvfrom(struct espress_stream_dgram *this, b_t *data, u_t *data_size, ip_addr_t *address, u16_t *port)
+{
+	err_t ret = ERR_WOULDBLOCK;
+	if (NULL != this->recv_pbuf)
+	{
+		if (this->recv_pbuf->len < *data_size)
+		{
+			*data_size = this->recv_pbuf->len;
+		}
+		memcpy(data, this->recv_pbuf->payload, *data_size);
+		memcpy(address, this->recv_ipaddr, sizeof(*address));
+		*port = this->recv_port;
+		pbuf_free(this->recv_pbuf);
+		this->recv_pbuf = NULL;
+		ret = ERR_OK;
+	}
+	return ret;
 }
 
 static i_t _initialize(struct espress_stream_dgram *this, struct espress_stream_dgram_address const *bind_address, struct espress_stream_event *send_event, struct espress_stream_event *recv_event)
@@ -117,7 +129,7 @@ static i_t _initialize(struct espress_stream_dgram *this, struct espress_stream_
 	this->num_sent_buffer = 0;
 	this->num_recv_buffer = 0;
 	this->num_rcvd_buffer = 0;
-	this->udp_recvfrom = -1;
+	this->recv_pbuf = NULL;
 	udp_recv(this->pcb, _udp_recv_callback, this);
 
 BIND_FAIL_EXIT:
@@ -157,7 +169,6 @@ static i_t _send_request(struct espress_stream_dgram *this, struct espress_strea
 	(void)ex_buffer;
 	(void)ex_num;
 	espress_stream_mutex->lock(this->send_mutex);
-	cyw43_arch_lwip_begin();
 	if ((0 == this->num_send_buffer) && (0 == this->num_sent_buffer))
 	{
 		this->send_buffer = buffer;
@@ -168,7 +179,6 @@ static i_t _send_request(struct espress_stream_dgram *this, struct espress_strea
 	{
 		ret = -1;
 	}
-	cyw43_arch_lwip_end();
 	espress_stream_mutex->unlock(this->send_mutex);
 	return ret;
 }
@@ -177,7 +187,6 @@ static i_t _send_result(struct espress_stream_dgram *this, u_t *num)
 {
 	i_t ret;
 	espress_stream_mutex->lock(this->send_mutex);
-	cyw43_arch_lwip_begin();
 	if (0 == this->num_send_buffer)
 	{
 		*num = this->num_sent_buffer;
@@ -190,7 +199,6 @@ static i_t _send_result(struct espress_stream_dgram *this, u_t *num)
 		*num = 0;
 		ret = -1;
 	}
-	cyw43_arch_lwip_end();
 	espress_stream_mutex->unlock(this->send_mutex);
 	return ret;
 }
@@ -201,7 +209,6 @@ static i_t _recv_request(struct espress_stream_dgram *this, struct espress_strea
 	(void)ex_buffer;
 	(void)ex_num;
 	espress_stream_mutex->lock(this->recv_mutex);
-	cyw43_arch_lwip_begin();
 	if ((0 == this->num_recv_buffer) && (0 == this->num_rcvd_buffer))
 	{
 		this->recv_buffer = buffer;
@@ -212,7 +219,6 @@ static i_t _recv_request(struct espress_stream_dgram *this, struct espress_strea
 	{
 		ret = -1;
 	}
-	cyw43_arch_lwip_end();
 	espress_stream_mutex->unlock(this->recv_mutex);
 	return ret;
 }
@@ -221,7 +227,6 @@ static i_t _recv_result(struct espress_stream_dgram *this, u_t *num)
 {
 	i_t ret;
 	espress_stream_mutex->lock(this->recv_mutex);
-	cyw43_arch_lwip_begin();
 	if (0 == this->num_recv_buffer)
 	{
 		*num = this->num_rcvd_buffer;
@@ -234,7 +239,6 @@ static i_t _recv_result(struct espress_stream_dgram *this, u_t *num)
 		*num = 0;
 		ret = -1;
 	}
-	cyw43_arch_lwip_end();
 	espress_stream_mutex->unlock(this->recv_mutex);
 	return ret;
 }
@@ -260,9 +264,10 @@ static void _send_yield(struct espress_stream_dgram *this, struct espress_stream
 	}
 
 	cyw43_arch_lwip_begin();
+
 	errno = 0;
-	p = pbuf_alloc(PBUF_TRANSPORT, this->send_buffer[0]->data_size, PBUF_RAM);
-	if ((NULL != p) && (0 < this->num_send_buffer) && (0 == this->num_sent_buffer))
+	if ((0 < this->num_send_buffer) && (0 == this->num_sent_buffer) &&
+		(NULL != (p = pbuf_alloc(PBUF_TRANSPORT, this->send_buffer[0]->data_size, PBUF_RAM))))
 	{
 		memcpy(p->payload, this->send_buffer[0]->data, this->send_buffer[0]->data_size);
 		while(ERR_OK != udp_sendto(this->pcb, p, this->send_buffer[0]->address->storage->address, this->send_buffer[0]->address->storage->port))
@@ -286,16 +291,14 @@ static void _send_yield(struct espress_stream_dgram *this, struct espress_stream
 				break;
 			}
 		}
+		pbuf_free(p);
 	}
 	else
 	{
 		errno = -1;
 	}
+
 	cyw43_arch_lwip_end();
-	if (NULL != p)
-	{
-		pbuf_free(p);
-	}
 
 	espress_stream_mutex->lock(this->send_mutex);
 
@@ -340,28 +343,42 @@ static void _recv_yield(struct espress_stream_dgram *this, struct espress_stream
 	}
 
 	cyw43_arch_lwip_begin();
+
 	errno = 0;
-	while (ERR_OK != this->udp_recvfrom)
+	if ((0 < this->num_recv_buffer) && (0 == this->num_rcvd_buffer))
 	{
-		cyw43_arch_lwip_end();
-#		if PICO_CYW43_ARCH_POLL
-			cyw43_arch_poll();
-#		endif
-		espress_stream_tick->get_us(v);
-		espress_stream_uint32_sub(v, u);
-		cyw43_arch_lwip_begin();
-		if (espress_stream_uint32_le(timeout, v))
+		while (ERR_OK != _udp_recvfrom(this,
+			this->recv_buffer[0]->data,
+			&(this->recv_buffer[0]->data_size),
+			this->recv_buffer[0]->address->storage->address,
+			&(this->recv_buffer[0]->address->storage->port)))
 		{
-			errno = -1;
-			break;
-		}
-		espress_stream_event->wait(this->recv_break_event, f, espress_stream_uint32_0);
-		if (espress_stream_event_flags->is_set_any(f))
-		{
-			errno = -1;
-			break;
+			cyw43_arch_lwip_end();
+#			if PICO_CYW43_ARCH_POLL
+				cyw43_arch_poll();
+#			endif
+			espress_stream_tick->get_us(v);
+			espress_stream_uint32_sub(v, u);
+			cyw43_arch_lwip_begin();
+			if (espress_stream_uint32_le(timeout, v))
+			{
+				errno = -1;
+				break;
+			}
+			espress_stream_event->wait(this->recv_break_event, f, espress_stream_uint32_0);
+			if (espress_stream_event_flags->is_set_any(f))
+			{
+				errno = -1;
+				break;
+			}
 		}
 	}
+	else
+	{
+		errno = -1;
+	}
+
+	cyw43_arch_lwip_end();
 
 	espress_stream_mutex->lock(this->recv_mutex);
 
@@ -377,7 +394,6 @@ static void _recv_yield(struct espress_stream_dgram *this, struct espress_stream
 			this->num_rcvd_buffer = (0 == errno) ? 1 : 0;
 			this->recv_errno = errno;
 			espress_stream_event->set(this->recv_outer_event, ESPRESS_STREAM_EVENT_DGRAM_RECV_RESULT);
-			this->udp_recvfrom = -1;
 		}
 	}
 	else
