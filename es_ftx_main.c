@@ -145,7 +145,6 @@ static char const *arg_user_password = USER_PASSWORD;
 struct file_tx_attr {
 	unsigned index;
 	int is_attached;
-	pthread_t thread;
 	void *sid;
 	volatile int is_running;
 	struct sockaddr_storage const *address;
@@ -715,7 +714,7 @@ FILE_NAME_INVALID_EXIT:
 	return ret;
 }
 
-int app_main()
+int es_ftx_main()
 {
 	int ret = 0;
 	int i;
@@ -748,6 +747,9 @@ int app_main()
 	ipaddr_aton(arg_address, address->address);
 	address->port = atoi(arg_port);
 
+	ipaddr_aton("0.0.0.0", src_address->address);
+	src_address->port = 0;
+
 	is_stream_ng = (espress_stream_begin() != 0);
 	if (is_stream_ng) {
 		ret = 1;
@@ -755,8 +757,6 @@ int app_main()
 		goto EXIT;
 	}
 
-	ipaddr_aton("0.0.0.0", src_address->address);
-	src_address->port = 0;
 	i = espress_stream_begin_interface(&ifd, src_address);
 	if (i != 0) {
 		ifd = NULL;
@@ -825,7 +825,7 @@ int main()
 		printf("Wi-fi connection success (%s).\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
 		printf("start\n\n");
 		u = espress_stream_time();
-		app_main();
+		es_ftx_main();
 		u = espress_stream_time() - u;
 		printf("\nfinish (elapsed time = %u us)\n", u);
 	}

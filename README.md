@@ -15,15 +15,20 @@ linux用とは以下のような違いがあります。
 その他、小リソース向けに設定値を変更しています。
 
 なお、開発環境には[Raspberry Pi Pico C/C++ SDK](https://datasheets.raspberrypi.com/picow/connecting-to-the-internet-with-pico-w.pdf)を用いました。
-OSは未使用(ベア環境)です。
 
 ## パッケージ
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20250903.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250903.tar.gz)
+- [espress_stream_for_pico_w.20250919.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250919.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20250919.tar.gz (1.11-1)
+: <ul>
+    <li>espress_streamのバージョンアップに対応した。</li>
+    <li>サンプルアプリケーション<tt>es_ccat</tt>を新設。</li>
+  </ul>
 
 espress_stream_for_pico_w.20250903.tar.gz (1.10-1)
 : <ul>
@@ -129,7 +134,9 @@ $ tar zxvf espress_stream_for_pico_w.########.tar.gz
 ```
 
 パッケージには移植されたespress_streamとサンプルアプリケーションが含まれています。
-サンプルアプリケーションは[linux用の<tt>es_ftx</tt>](http://akino-yo.f5.si/akinoyonika/espress_stream/#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)を移植したものです。
+サンプルアプリケーションは[linux用の<tt>es_ccat</tt>と<tt>es_ftx</tt>](http://akino-yo.f5.si/akinoyonika/espress_stream/#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)を移植したものです。
+<tt>es_ccat</tt>はクライアントアプリケーションで標準入力からの入力を接続したサーバーアプリケーションに送信し、
+サーバーアプリケーションからの受信を標準出力に出力します。
 <tt>es_ftx</tt>はクライアントアプリケーションで、サーバーアプリケーション<tt>es_frx</tt>に対してファイルを送信する機能を持ちます。
 移植された<tt>es_ftx</tt>は<tt>test.dat</tt>というファイル名で1MBのダミーデータを送信するように作られています。
 
@@ -137,14 +144,16 @@ $ tar zxvf espress_stream_for_pico_w.########.tar.gz
 
 ### バイナリーの作成
 
+以下は<tt>es_ccat</tt>におけるバイナリー作成手順を示しています。<tt>es_ftx</tt>については適宜<tt>es_ccat</tt>部分を<tt>es_ftx</tt>に読み替えてください。
+
 ```
 $ cd espress_stream_for_pico_w
 $ vi wifi_config.h
-$ vi app_main.c
+$ vi es_ccat_main.c
 $ mkdir build
 $ cd build
 $ PICO_SDK_PATH=../../pico-sdk PICO_BOARD=pico_w cmake ..
-$ make espress_stream_app_lwip_background
+$ make espress_stream_es_ccat_lwip_background
 ```
 
 <tt>wifi_config.h</tt>ではwifiアクセスポイントの設定を行っています。
@@ -156,7 +165,7 @@ $ make espress_stream_app_lwip_background
 
 以上のような内容で作成してください。
 
-<tt>app_main.c</tt>ではサーバーのアドレス、ポート、公開鍵およびユーザーID、パスワードを設定していますので、この部分を編集します。
+<tt>es_ccat_main.c</tt>ではサーバーのアドレス、ポート、公開鍵およびユーザーID、パスワードを設定していますので、この部分を編集します。
 
 ```
 #define ADDRESS "192.168.1.2"
@@ -169,9 +178,9 @@ $ make espress_stream_app_lwip_background
 #define USER_PASSWORD "tpfBTht8"
 ```
 
-公開鍵、ユーザーID、パスワードは<tt>es_frx</tt>の設定に合わせる必要があります。詳細は「[linux用の<tt>es_ftx</tt>、<tt>es_frx</tt>](http://akino-yo.f5.si/akinoyonika/espress_stream/#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)」を参照してください。
+公開鍵、ユーザーID、パスワードはサーバーの設定に合わせる必要があります。詳細はlinux用パッケージの該当ドキュメントを参照してください。
 
-以上の手順で<tt>build</tt>ディレクトリに<tt>espress_stream_app_lwip_background.uf2</tt>が作成されます。
+以上の手順で<tt>build</tt>ディレクトリに<tt>espress_stream_es_ccat_lwip_background.uf2</tt>が作成されます。
 これをPico Wに導入してください。
 
 ### メイク時のワーニングについて
@@ -182,6 +191,16 @@ $ make espress_stream_app_lwip_background
 ## 使用方法
 
 ### サンプルアプリケーション
+
+#### <tt>es_ccat</tt>
+
+linuxにてサーバーアプリケーション<tt>es_scat</tt>を起動してください。
+また、Pico Wの起動後にusb経由でシリアルコンソールが接続するように準備しておいてください。(行末はLFで。)
+30秒以内にソフトウェア導入済みのPico Wを起動すれば、少し時間をおいて"CONNECT"の表示がコンソールに出ます。
+この状態でシリアルコンソールから文字列を入力するとlinux側にその文字列が出力されます。
+同様にlinux側で文字列を入力するとシリアルコンソール側に文字列が出力されます。
+
+#### <tt>es_ftx</tt>
 
 linuxにてサーバーアプリケーション<tt>es_frx</tt>を起動、ファイル受信の準備をしておいてください。
 ソフトウェア導入済みのPico Wを起動すればファイルの転送を開始します。

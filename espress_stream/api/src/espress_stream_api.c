@@ -52,7 +52,7 @@
 	espress_stream_uint32_set((n), c3, c2, c1, c0); \
 } while (0)
 
-struct espress_stream_uint32 /*const*/ espress_stream_connect_timeout_time[1] = {ESPRESS_STREAM_CONNECT_TIMEOUT_TIME};
+struct espress_stream_uint32 const espress_stream_connect_timeout_time[1] = {ESPRESS_STREAM_CONNECT_TIMEOUT_TIME};
 
 enum {
 	READY = 0,
@@ -1470,7 +1470,9 @@ int espress_stream_send(void *sid, void const *data, unsigned *data_size, unsign
 	}
 
 	if (ret == 0) {
-		if (0 < v) {
+		if (espress_stream_event_flags->is_set(this->flags, ESPRESS_STREAM_EVENT_SESSION_ERROR)) {
+			ret = 1;
+		} else if (0 < v) {
 			*data_size = v;
 		} else {
 			ret = -1;
