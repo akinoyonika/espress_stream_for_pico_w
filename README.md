@@ -20,9 +20,14 @@ linux用とは以下のような違いがあります。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20250919.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250919.tar.gz)
+- [espress_stream_for_pico_w.20250928.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20250928.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20250928.tar.gz (1.11-1)
+: <ul>
+    <li>ドキュメントの修正。</li>
+  </ul>
 
 espress_stream_for_pico_w.20250919.tar.gz (1.11-1)
 : <ul>
@@ -144,16 +149,16 @@ $ tar zxvf espress_stream_for_pico_w.########.tar.gz
 
 ### バイナリーの作成
 
-以下は<tt>es_ccat</tt>におけるバイナリー作成手順を示しています。<tt>es_ftx</tt>については適宜<tt>es_ccat</tt>部分を<tt>es_ftx</tt>に読み替えてください。
+以下は<tt>es_ftx</tt>におけるバイナリー作成手順を示しています。<tt>es_ccat</tt>については適宜<tt>es_ftx</tt>部分を<tt>es_ccat</tt>に読み替えてください。
 
 ```
 $ cd espress_stream_for_pico_w
 $ vi wifi_config.h
-$ vi es_ccat_main.c
+$ vi es_ftx_main.c
 $ mkdir build
 $ cd build
 $ PICO_SDK_PATH=../../pico-sdk PICO_BOARD=pico_w cmake ..
-$ make espress_stream_es_ccat_lwip_background
+$ make espress_stream_es_ftx_lwip_background
 ```
 
 <tt>wifi_config.h</tt>ではwifiアクセスポイントの設定を行っています。
@@ -165,7 +170,7 @@ $ make espress_stream_es_ccat_lwip_background
 
 以上のような内容で作成してください。
 
-<tt>es_ccat_main.c</tt>ではサーバーのアドレス、ポート、公開鍵およびユーザーID、パスワードを設定していますので、この部分を編集します。
+<tt>es_ftx_main.c</tt>ではサーバーのアドレス、ポート、公開鍵およびユーザーID、パスワードを設定していますので、この部分を編集します。
 
 ```
 #define ADDRESS "192.168.1.2"
@@ -179,8 +184,9 @@ $ make espress_stream_es_ccat_lwip_background
 ```
 
 公開鍵、ユーザーID、パスワードはサーバーの設定に合わせる必要があります。詳細はlinux用パッケージの該当ドキュメントを参照してください。
+(<tt>ex_ccat</tt>の場合、ユーザーIDとパスワードの設定はありません。)
 
-以上の手順で<tt>build</tt>ディレクトリに<tt>espress_stream_es_ccat_lwip_background.uf2</tt>が作成されます。
+以上の手順で<tt>build</tt>ディレクトリに<tt>espress_stream_es_ftx_lwip_background.uf2</tt>が作成されます。
 これをPico Wに導入してください。
 
 ### メイク時のワーニングについて
