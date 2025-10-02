@@ -1409,26 +1409,26 @@ static i_t _recv_envelope(struct espress_stream_trans_packet *this,
 		espress_stream_uint32_add(send_data_address, u);
 	}
 
-	if ((is_first) && (0 < packet_payload_size))
+	if (is_first)
 	{
-		espress_stream_uint32_assign(this->src_receive_counter_number, this->dst_counter_number);
-
-		if (0 < (payload_size_var + add_payload_size_var))
+		if (0 < packet_payload_size)
 		{
-			*is_ack_true = !espress_stream_uint32_eq(this->dst_receive_counter_number, receive_counter_number);
-
-			if (*is_ack_true)
-			{
-				_stop_rto_measurement(this->rto_measurement, receive_counter_number);
-			}
-			_check_duplicate_ack_count(this->duplicate_ack_count,
-				this->dst_receive_window_address,
-				receive_window_address,
-				*is_ack_true);
-
-			espress_stream_uint32_assign(this->dst_receive_counter_number, receive_counter_number);
-			espress_stream_uint32_assign(this->dst_receive_window_address, receive_window_address);
+			espress_stream_uint32_assign(this->src_receive_counter_number, this->dst_counter_number);
 		}
+
+		*is_ack_true = !espress_stream_uint32_eq(this->dst_receive_counter_number, receive_counter_number);
+
+		if (*is_ack_true)
+		{
+			_stop_rto_measurement(this->rto_measurement, receive_counter_number);
+		}
+		_check_duplicate_ack_count(this->duplicate_ack_count,
+			this->dst_receive_window_address,
+			receive_window_address,
+			*is_ack_true);
+
+		espress_stream_uint32_assign(this->dst_receive_counter_number, receive_counter_number);
+		espress_stream_uint32_assign(this->dst_receive_window_address, receive_window_address);
 	}
 
 	memcpy(this->dst_address, p->address, sizeof(*(this->dst_address)));

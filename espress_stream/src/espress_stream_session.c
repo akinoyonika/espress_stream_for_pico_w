@@ -1294,16 +1294,16 @@ static i_t _yield_recv_recv_established(struct espress_stream_session *this)
 			espress_stream_timer->cancel(this->recv_session_timer);
 			espress_stream_timer->start(this->recv_session_timer, _recv_session_timeout_callback, this, espress_stream_recv_session_timeout_time);
 
-				/*
-				 *               +- dst_send_data_size
-				 *               |
-				 *            <--+--->
-				 *    ....####....====....
-				 *            |   |
-				 *            |   +- dst_send_data_address
-				 *            |
-				 *            +- data_address
-				 */
+			/*
+			 *               +- dst_send_data_size
+			 *               |
+			 *            <--+--->
+			 *    ....####....====....
+			 *            |   |
+			 *            |   +- dst_send_data_address
+			 *            |
+			 *            +- data_address
+			 */
 
 			if (0 < dst_send_data_size)
 			{
