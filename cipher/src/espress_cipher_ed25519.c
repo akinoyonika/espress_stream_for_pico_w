@@ -617,7 +617,7 @@ static void _sc25519_reduce_add_sub(struct sc25519 *r)
 	struct espress_cipher_uint32 mask[1];
 	struct espress_cipher_uint32 t[32];
 
-	for(i = 0 ; i < 32 ; i++)
+	for (i = 0 ; i < 32 ; i++)
 	{
 		espress_cipher_uint32_add(pb, _sc25519_m + i);
 		espress_cipher_uint32_set_u(b, _lt(r->v + i, pb));
@@ -32947,7 +32947,7 @@ static void _ge25519_scalar_mult_base(struct ge25519_p3 *r, struct sc25519 const
 	_fe25519_set_one(r->z);
 	memcpy(r->t, r->x, sizeof(*(r->t)));
 	_fe25519_mul(r->t, r->y);
-	for(i = 1 ; i < 85 ; i++)
+	for (i = 1 ; i < 85 ; i++)
 	{
 		_ge25519_choose_t(t, i, b[i]);
 		_ge25519_mix_add_2(r, t);

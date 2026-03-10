@@ -309,7 +309,7 @@ static void _update(struct espress_cipher_sha512 *this, b_t const *message, u_t 
 		goto EXIT;
 	}
 
-	while(0 < size)
+	while (0 < size)
 	{
 		if ((ESPRESS_CIPHER_SHA512_CHUNK_SIZE - this->buffer_size) < size)
 		{

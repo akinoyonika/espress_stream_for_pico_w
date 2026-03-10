@@ -270,7 +270,7 @@ static void _send_yield(struct espress_stream_dgram *this, struct espress_stream
 		(NULL != (p = pbuf_alloc(PBUF_TRANSPORT, this->send_buffer[0]->data_size, PBUF_RAM))))
 	{
 		memcpy(p->payload, this->send_buffer[0]->data, this->send_buffer[0]->data_size);
-		while(ERR_OK != udp_sendto(this->pcb, p, this->send_buffer[0]->address->storage->address, this->send_buffer[0]->address->storage->port))
+		while (ERR_OK != udp_sendto(this->pcb, p, this->send_buffer[0]->address->storage->address, this->send_buffer[0]->address->storage->port))
 		{
 			cyw43_arch_lwip_end();
 #			if PICO_CYW43_ARCH_POLL

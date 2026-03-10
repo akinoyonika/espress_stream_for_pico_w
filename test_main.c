@@ -22,7 +22,7 @@ static void _dump(unsigned char const *buffer, unsigned size)
 }
 
 #undef assert
-#define assert(b) do{if (!(b)){printf("error (%d)\n", __LINE__);for(;;);}}while (0)
+#define assert(b) do{if (!(b)){printf("error (%d)\n", __LINE__);for (;;);}}while (0)
 
 static void test_main()
 {

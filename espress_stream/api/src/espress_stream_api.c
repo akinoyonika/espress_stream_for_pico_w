@@ -1874,7 +1874,7 @@ int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num
 
 				espress_stream_uint32_sub(u, start_time);
 				for (i = 0 ; i < num ; i++) {
-					if(get_session(sids[i])->is_broken) {
+					if (get_session(sids[i])->is_broken) {
 						break;
 					}
 				}
@@ -1915,7 +1915,7 @@ int espress_stream_poll(void * const *sids, unsigned const *events, unsigned num
 				espress_stream_tick->get_us(u);
 				espress_stream_uint32_sub(u, start_time);
 				for (i = 0 ; i < num ; i++) {
-					if(get_session(sids[i])->is_broken) {
+					if (get_session(sids[i])->is_broken) {
 						break;
 					}
 				}

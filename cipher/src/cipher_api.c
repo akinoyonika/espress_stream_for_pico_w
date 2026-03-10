@@ -18,7 +18,7 @@
 				u -= s;               \
 			}                         \
 		}                             \
-	} while(0)
+	} while (0)
 
 	get_random(secret_key, CIPHER_ED25519_SECRET_KEY_SIZE - CIPHER_ED25519_PUBLIC_KEY_SIZE);
 	espress_cipher_ed25519->get_public_key(public_key, secret_key);

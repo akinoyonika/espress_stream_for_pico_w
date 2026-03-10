@@ -286,7 +286,7 @@ static void _update(struct espress_stream_hash *this, b_t const *message, u_t si
 		goto EXIT;
 	}
 
-	while(0 < size)
+	while (0 < size)
 	{
 		if ((ESPRESS_STREAM_HASH_CHUNK_SIZE - this->buffer_size) < size)
 		{
