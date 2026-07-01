@@ -1,6 +1,6 @@
 # Raspberry Pi Pico W用espress_stream
 
-<div style="text-align:right">2026年3月11日</div>
+<div style="text-align:right">2026年7月1日</div>
 
 ## 概要
 
@@ -22,9 +22,14 @@ linux用とは以下のような違いがあります。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20260311.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20260311.tar.gz)
+- [espress_stream_for_pico_w.20260701.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20260701.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20260701.tar.gz (1.12-1)
+: <ul>
+    <li><tt>CMakeLists.txt</tt>を整理し、<tt>espress_stream_import.sh</tt>を改良。ソフトウェア本体には変更なし。</li>
+  </ul>
 
 espress_stream_for_pico_w.20260311.tar.gz (1.12-1)
 : <ul>
@@ -170,10 +175,10 @@ $ vi es_ftx_main.c
 $ mkdir build
 $ cd build
 $ PICO_SDK_PATH=../../pico-sdk PICO_BOARD=pico_w cmake ..
-$ make espress_stream_es_ftx_lwip_background
+$ make es_ftx
 ```
 
-<tt>wifi_config.h</tt>ではwifiアクセスポイントの設定を行っています。
+<tt>api/include/wifi_config.h</tt>ではwifiアクセスポイントの設定を行っています。
 
 ```
 #define WIFI_SSID "MY_WIFI_SSID"
@@ -198,7 +203,7 @@ $ make espress_stream_es_ftx_lwip_background
 公開鍵、ユーザーID、パスワードはサーバーの設定に合わせる必要があります。詳細はlinux用パッケージの該当ドキュメントを参照してください。
 (<tt>ex_ccat</tt>の場合、ユーザーIDとパスワードの設定はありません。)
 
-以上の手順で<tt>build</tt>ディレクトリに<tt>espress_stream_es_ftx_lwip_background.uf2</tt>が作成されます。
+以上の手順で<tt>build</tt>ディレクトリに<tt>es_ftx.uf2</tt>が作成されます。
 これをPico Wに導入してください。
 
 ### メイク時のワーニングについて
@@ -231,20 +236,15 @@ linuxにてサーバーアプリケーション<tt>es_frx</tt>を起動、ファ
 <tt>CMakeLists.txt</tt>に設定を追加します。
 
 <tt>include_directories</tt>
-: <tt>espress_stream/include</tt>、<tt>espress_stream/api/include</tt>をインクルードパスに追加。
+: <tt>espress_stream/api/include</tt>をインクルードパスに追加。
 
-<tt>add_executable</tt>
-: <tt>espress_stream/src/\*.c</tt>、<tt>espress_stream/api/src/\*.c</tt>をソースに追加。
+<tt>add_subdirectory</tt>
+: <tt>espress_stream</tt>をサブディレクトリに追加。
 
 <tt>target_link_libraries</tt>
-: <tt>pico_stdlib</tt>、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をライブラリーに追加。
+: <tt>pico_stdlib</tt>、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt><tt>espress_stream</tt>をライブラリーに追加。
 
-<tt>target_compile_definitions</tt>
-: <tt>ESPRESS_STREAM_MAJOR_VERSION=#</tt>、<tt>ESPRESS_STREAM_MINOR_VERSION=#</tt>、<tt>ESPRESS_STREAM_PROTOCOL_VERSION=#</tt>を定義に追加。
-"<tt>#</tt>"の部分は実際には数字です。
-パッケージの<tt>CMakeLists.txt</tt>にある同設定のものに合わせてください。
-
-UDPを使うため、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をライブラリーに追加し、lwIPを導入しています。lwIPはオプションをlwipopts.hに設定します。これを作成し、いずれかのインクルードパスにおいてください。詳細は[pico-examplesの<tt>pico_w/wifi/lwipopts_examples_common.h</tt>](https://github.com/raspberrypi/pico-examples/blob/master/pico_w/wifi/lwipopts_examples_common.h)を参照してください。
+UDPを使うため、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をライブラリーに追加し、lwIPを導入しています。lwIPはオプションをlwipopts.hに設定します。これを作成し、<tt>api/include</tt>ディレクトリにおいてください。詳細は[pico-examplesの<tt>pico_w/wifi/lwipopts_examples_common.h</tt>](https://github.com/raspberrypi/pico-examples/blob/master/pico_w/wifi/lwipopts_examples_common.h)を参照してください。
 
 アプリケーションからespress_streamを利用するためのAPIはlinux用ライブラリーと同じです。
 詳細は「[linux用のライブラリー使用方法](http://akino-yo.f5.si/akinoyonika/espress_stream/#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)」を参照してください。

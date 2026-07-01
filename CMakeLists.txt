@@ -11,127 +11,73 @@ pico_sdk_init()
 
 # rest of your project
 
-add_compile_options(-Wall)
+set(SUBDIRECTORIES
+	espress_stream
+)
+
+set(OPTIONS
+	-Wall
+)
+
 set(INCLUDES
-	espress_stream/include
 	espress_stream/api/include
 	cipher/include
 )
-include_directories(${INCLUDES})
+
 file(GLOB TEST_SOURCES
 	test_main.c
-	espress_stream/src/*.c
-	espress_stream/api/src/*.c
 )
+
 file(GLOB ES_FTX_SOURCES
 	es_ftx_main.c
-	espress_stream/src/*.c
-	espress_stream/api/src/*.c
 	cipher/src/*.c
 )
+
 file(GLOB ES_CCAT_SOURCES
 	es_ccat_main.c
-	espress_stream/src/*.c
-	espress_stream/api/src/*.c
 	cipher/src/*.c
 )
 
-# espress_stream_test_lwip_poll
-
-add_executable(espress_stream_test_lwip_poll ${TEST_SOURCES})
-
-target_include_directories(espress_stream_test_lwip_poll PRIVATE
-	${CMAKE_CURRENT_LIST_DIR}
+set(LIBRARIES
+	pico_stdlib
+	pico_cyw43_arch_lwip_threadsafe_background
+	espress_stream
 )
-target_link_libraries(espress_stream_test_lwip_poll pico_stdlib pico_cyw43_arch_lwip_poll)
 
-pico_enable_stdio_usb(espress_stream_test_lwip_poll 1)
-pico_enable_stdio_uart(espress_stream_test_lwip_poll 0)
+add_subdirectory(${SUBDIRECTORIES})
 
-pico_add_extra_outputs(espress_stream_test_lwip_poll)
+# test
 
-# espress_stream_test_lwip_background
+add_executable(test ${TEST_SOURCES})
+target_compile_options(test PRIVATE ${OPTIONS})
+target_include_directories(test PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${INCLUDES})
+target_link_libraries(test ${LIBRARIES})
 
-add_executable(espress_stream_test_lwip_background ${TEST_SOURCES})
+pico_enable_stdio_usb(test 1)
+pico_enable_stdio_uart(test 0)
 
-target_include_directories(espress_stream_test_lwip_background PRIVATE
-	${CMAKE_CURRENT_LIST_DIR}
-)
-target_link_libraries(espress_stream_test_lwip_background pico_stdlib pico_cyw43_arch_lwip_threadsafe_background)
+pico_add_extra_outputs(test)
 
-pico_enable_stdio_usb(espress_stream_test_lwip_background 1)
-pico_enable_stdio_uart(espress_stream_test_lwip_background 0)
+# es_ftx
 
-pico_add_extra_outputs(espress_stream_test_lwip_background)
+add_executable(es_ftx ${ES_FTX_SOURCES})
+target_compile_options(es_ftx PRIVATE ${OPTIONS})
+target_include_directories(es_ftx PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${INCLUDES})
+target_link_libraries(es_ftx ${LIBRARIES})
 
-# espress_stream_es_ftx_lwip_poll
+pico_enable_stdio_usb(es_ftx 1)
+pico_enable_stdio_uart(es_ftx 0)
 
-add_executable(espress_stream_es_ftx_lwip_poll ${ES_FTX_SOURCES})
+pico_add_extra_outputs(es_ftx)
 
-target_compile_definitions(espress_stream_es_ftx_lwip_poll PRIVATE
-	ESPRESS_STREAM_MAJOR_VERSION=1
-	ESPRESS_STREAM_MINOR_VERSION=12
-	ESPRESS_STREAM_PROTOCOL_VERSION=1)
-target_include_directories(espress_stream_es_ftx_lwip_poll PRIVATE
-	${CMAKE_CURRENT_LIST_DIR}
-)
-target_link_libraries(espress_stream_es_ftx_lwip_poll pico_stdlib pico_cyw43_arch_lwip_poll)
+# es_ccat
 
-pico_enable_stdio_usb(espress_stream_es_ftx_lwip_poll 1)
-pico_enable_stdio_uart(espress_stream_es_ftx_lwip_poll 0)
+add_executable(es_ccat ${ES_CCAT_SOURCES})
+target_compile_options(es_ccat PRIVATE ${OPTIONS})
+target_include_directories(es_ccat PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${INCLUDES})
+target_link_libraries(es_ccat ${LIBRARIES})
 
-pico_add_extra_outputs(espress_stream_es_ftx_lwip_poll)
+pico_enable_stdio_usb(es_ccat 1)
+pico_enable_stdio_uart(es_ccat 0)
 
-# espress_stream_es_ftx_lwip_background
-
-add_executable(espress_stream_es_ftx_lwip_background ${ES_FTX_SOURCES})
-
-target_compile_definitions(espress_stream_es_ftx_lwip_background PRIVATE
-	ESPRESS_STREAM_MAJOR_VERSION=1
-	ESPRESS_STREAM_MINOR_VERSION=12
-	ESPRESS_STREAM_PROTOCOL_VERSION=1)
-target_include_directories(espress_stream_es_ftx_lwip_background PRIVATE
-	${CMAKE_CURRENT_LIST_DIR}
-)
-target_link_libraries(espress_stream_es_ftx_lwip_background pico_stdlib pico_cyw43_arch_lwip_threadsafe_background)
-
-pico_enable_stdio_usb(espress_stream_es_ftx_lwip_background 1)
-pico_enable_stdio_uart(espress_stream_es_ftx_lwip_background 0)
-
-pico_add_extra_outputs(espress_stream_es_ftx_lwip_background)
-
-# espress_stream_es_ccat_lwip_poll
-
-add_executable(espress_stream_es_ccat_lwip_poll ${ES_CCAT_SOURCES})
-
-target_compile_definitions(espress_stream_es_ccat_lwip_poll PRIVATE
-	ESPRESS_STREAM_MAJOR_VERSION=1
-	ESPRESS_STREAM_MINOR_VERSION=12
-	ESPRESS_STREAM_PROTOCOL_VERSION=1)
-target_include_directories(espress_stream_es_ccat_lwip_poll PRIVATE
-	${CMAKE_CURRENT_LIST_DIR}
-)
-target_link_libraries(espress_stream_es_ccat_lwip_poll pico_stdlib pico_cyw43_arch_lwip_poll)
-
-pico_enable_stdio_usb(espress_stream_es_ccat_lwip_poll 1)
-pico_enable_stdio_uart(espress_stream_es_ccat_lwip_poll 0)
-
-pico_add_extra_outputs(espress_stream_es_ccat_lwip_poll)
-
-# espress_stream_es_ccat_lwip_background
-
-add_executable(espress_stream_es_ccat_lwip_background ${ES_CCAT_SOURCES})
-
-target_compile_definitions(espress_stream_es_ccat_lwip_background PRIVATE
-	ESPRESS_STREAM_MAJOR_VERSION=1
-	ESPRESS_STREAM_MINOR_VERSION=12
-	ESPRESS_STREAM_PROTOCOL_VERSION=1)
-target_include_directories(espress_stream_es_ccat_lwip_background PRIVATE
-	${CMAKE_CURRENT_LIST_DIR}
-)
-target_link_libraries(espress_stream_es_ccat_lwip_background pico_stdlib pico_cyw43_arch_lwip_threadsafe_background)
-
-pico_enable_stdio_usb(espress_stream_es_ccat_lwip_background 1)
-pico_enable_stdio_uart(espress_stream_es_ccat_lwip_background 0)
-
-pico_add_extra_outputs(espress_stream_es_ccat_lwip_background)
+pico_add_extra_outputs(es_ccat)
