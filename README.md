@@ -1,6 +1,6 @@
 # Raspberry Pi Pico W用espress_stream
 
-<div style="text-align:right">2026年7月1日</div>
+<div style="text-align:right">2026年7月22日</div>
 
 ## 概要
 
@@ -22,9 +22,14 @@ linux用とは以下のような違いがあります。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20260701.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20260701.tar.gz)
+- [espress_stream_for_pico_w.20260722.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20260722.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20260722.tar.gz (1.12-1)
+: <ul>
+    <li><tt>es_ccat</tt>の僅かな修正。</li>
+  </ul>
 
 espress_stream_for_pico_w.20260701.tar.gz (1.12-1)
 : <ul>

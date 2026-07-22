@@ -44,7 +44,9 @@ set(LIBRARIES
 	espress_stream
 )
 
-add_subdirectory(${SUBDIRECTORIES})
+foreach(dir ${SUBDIRECTORIES})
+	add_subdirectory(${dir})
+endforeach()
 
 # test
 
