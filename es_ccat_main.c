@@ -10,14 +10,19 @@
 #include "espress_stream/api.h"
 #include "cipher_api.h"
 
-#include "wifi_config.h"
+#include "net_config.h"
 
-#define ADDRESS "192.168.1.2"
-#define PORT "12345"
-#define PUBLIC_KEY { \
-	0x73, 0x35, 0xe6, 0x3a, 0x76, 0x21, 0x23, 0xa9, 0x41, 0xa2, 0x5e, 0x5e, 0x53, 0x8d, 0xd4, 0xd2, \
-	0xe4, 0x7d, 0x86, 0x92, 0x80, 0xf8, 0x3a, 0xf7, 0x81, 0x0e, 0x0b, 0x3d, 0xae, 0x80, 0x69, 0xc9 \
-}
+#define IS_CON_HWSERIAL (0)
+
+#if IS_CON_HWSERIAL
+#	define UART_ID (uart0)
+#	define UART_BOUD_RATE (921600)
+#	define GPIO_UART_TX  (0) // PIN 1
+#	define GPIO_UART_RX  (1) // PIN 2
+#	define GPIO_UART_CTS (2) // PIN 4
+#	define GPIO_UART_RTS (3) // PIN 5
+#endif
+
 #define HALF_CLOSE (0)
 
 #define TIMEOUT (30 * 1000 * 1000)
@@ -41,7 +46,11 @@ static ssize_t read(int fd, void *buf, size_t count)
 		goto EXIT;
 	}
 
-	available = tud_cdc_available();
+#	if IS_CON_HWSERIAL
+		available = uart_is_readable(UART_ID) ? 1 : 0;
+#	else
+		available = tud_cdc_available();
+#	endif
 
 	if (available == 0) {
 		ret = -1;
@@ -58,7 +67,16 @@ static ssize_t read(int fd, void *buf, size_t count)
 		count = available;
 	}
 
-	ret = tud_cdc_read(buf, count);
+#	if IS_CON_HWSERIAL
+		if (0 < count) {
+			((char *)buf)[0] = uart_getc(UART_ID);
+			ret = 1;
+		} else {
+			ret = 0;
+		}
+#	else
+		ret = tud_cdc_read(buf, count);
+#	endif
 
 	if (ret == 0) {
 		ret = -1;
@@ -81,7 +99,11 @@ static ssize_t write(int fd, void const *buf, size_t count)
 		goto EXIT;
 	}
 
-	available = tud_cdc_write_available();
+#	if IS_CON_HWSERIAL
+		available = uart_is_writable(UART_ID) ? 1 : 0;
+#	else
+		available = tud_cdc_write_available();
+#	endif
 
 	if (available == 0) {
 		ret = -1;
@@ -98,14 +120,24 @@ static ssize_t write(int fd, void const *buf, size_t count)
 		count = available;
 	}
 
-	ret = tud_cdc_write(buf, count);
+#	if IS_CON_HWSERIAL
+		if (0 < count) {
+			uart_putc(UART_ID, ((char *)buf)[0]);
+		}
+		ret = 1;
+#	else
+		ret = tud_cdc_write(buf, count);
+#	endif
 
 	if (ret == 0) {
 		ret = -1;
 		errno = 255;
 	}
 
-	tud_cdc_write_flush();
+#	if IS_CON_HWSERIAL
+#	else
+		tud_cdc_write_flush();
+#	endif
 
 EXIT:
 
@@ -119,10 +151,13 @@ static int close(int fd)
 }
 
 static void *ifd;
-static const char *arg_address = ADDRESS;
-static const char *arg_port = PORT;
-static unsigned char arg_public_key[] = PUBLIC_KEY;
-static int arg_is_close_half = HALF_CLOSE;
+char const *arg_wifi_ssid = WIFI_SSID;
+char const *arg_wifi_password = WIFI_PASSWORD;
+char const *arg_address = ADDRESS;
+char const *arg_port = PORT;
+unsigned char const _arg_public_key[] = PUBLIC_KEY;
+unsigned char const *arg_public_key = _arg_public_key;
+int arg_is_close_half = HALF_CLOSE;
 
 struct session_attr {
 	void *sid;
@@ -582,6 +617,16 @@ int main()
 	int ret = 0;
 	unsigned u;
 	stdio_init_all();
+#	if IS_CON_HWSERIAL
+		uart_init(UART_ID, UART_BOUD_RATE);
+		gpio_set_function(GPIO_UART_TX, GPIO_FUNC_UART);
+		gpio_set_function(GPIO_UART_RX, GPIO_FUNC_UART);
+		gpio_set_function(GPIO_UART_CTS, GPIO_FUNC_UART);
+		gpio_set_function(GPIO_UART_RTS, GPIO_FUNC_UART);
+		uart_set_hw_flow(UART_ID, true, true); 
+		uart_set_format(UART_ID, 8, 1, UART_PARITY_NONE);
+		uart_set_fifo_enabled(UART_ID, true);
+#	endif
 	if (cyw43_arch_init()) {
 		printf("Wi-fi initialization failure.\n");
 		ret = 1;
@@ -589,7 +634,7 @@ int main()
 	}
 	cyw43_arch_enable_sta_mode();
 	printf("Connecting to Wi-fi...\n");
-	if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+	if (cyw43_arch_wifi_connect_timeout_ms(arg_wifi_ssid, arg_wifi_password, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
 		printf("Wi-fi connection failure.\n");
 	} else {
 		printf("Wi-fi connection success (%s).\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));

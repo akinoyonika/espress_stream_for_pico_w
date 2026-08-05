@@ -7,10 +7,10 @@
 
 #include "espress_stream/api.h"
 
-#include "wifi_config.h"
+#include "net_config.h"
 
-#define ADDRESS "192.168.1.2"
-#define PORT "12345"
+char const *arg_address = ADDRESS;
+char const *arg_port = PORT;
 
 static void _dump(unsigned char const *buffer, unsigned size)
 {
@@ -92,8 +92,8 @@ static void test_main()
 
 		printf("api: server: listen\n");
 
-		address->port = atoi(PORT);
-		ipaddr_aton(ADDRESS, address->address);
+		address->port = atoi(arg_port);
+		ipaddr_aton(arg_address, address->address);
 		k = espress_stream_connect(client_sid, address);
 		assert(k == 0);
 		printf("api: client: connect\n");

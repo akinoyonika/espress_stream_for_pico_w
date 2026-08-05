@@ -32,4 +32,4 @@
 !README.md
 !pico_sdk_import.cmake
 !espress_stream_import.sh
-wifi_config.h
+net_config.h

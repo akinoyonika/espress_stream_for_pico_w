@@ -1,6 +1,6 @@
 # Raspberry Pi Pico W用espress_stream
 
-<div style="text-align:right">2026年7月22日</div>
+<div style="text-align:right">2026年8月5日</div>
 
 ## 概要
 
@@ -22,9 +22,14 @@ linux用とは以下のような違いがあります。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20260722.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20260722.tar.gz)
+- [espress_stream_for_pico_w.20260805.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20260805.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20260805.tar.gz (1.12-1)
+: <ul>
+    <li>ネットワーク関連設定を<tt>net_config.h</tt>に集約。</li>
+  </ul>
 
 espress_stream_for_pico_w.20260722.tar.gz (1.12-1)
 : <ul>
@@ -175,26 +180,18 @@ $ tar zxvf espress_stream_for_pico_w.########.tar.gz
 
 ```
 $ cd espress_stream_for_pico_w
-$ vi wifi_config.h
-$ vi es_ftx_main.c
+$ vi net_config.h
 $ mkdir build
 $ cd build
 $ PICO_SDK_PATH=../../pico-sdk PICO_BOARD=pico_w cmake ..
 $ make es_ftx
 ```
 
-<tt>api/include/wifi_config.h</tt>ではwifiアクセスポイントの設定を行っています。
+<tt>api/include/net_config.h</tt>ではwifiアクセスポイントSSID、パスワードおよびサーバーのアドレス、ポート、公開鍵、ユーザーID、パスワードの設定を行っています。
 
 ```
 #define WIFI_SSID "MY_WIFI_SSID"
 #define WIFI_PASSWORD "my_wifi_password"
-```
-
-以上のような内容で作成してください。
-
-<tt>es_ftx_main.c</tt>ではサーバーのアドレス、ポート、公開鍵およびユーザーID、パスワードを設定していますので、この部分を編集します。
-
-```
 #define ADDRESS "192.168.1.2"
 #define PORT "12345"
 #define PUBLIC_KEY { \
@@ -205,6 +202,7 @@ $ make es_ftx
 #define USER_PASSWORD "tpfBTht8"
 ```
 
+以上のような内容で作成してください。
 公開鍵、ユーザーID、パスワードはサーバーの設定に合わせる必要があります。詳細はlinux用パッケージの該当ドキュメントを参照してください。
 (<tt>ex_ccat</tt>の場合、ユーザーIDとパスワードの設定はありません。)
 
