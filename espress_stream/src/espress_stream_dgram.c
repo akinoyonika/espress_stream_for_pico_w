@@ -40,11 +40,14 @@ static void _udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, i
 	struct espress_stream_dgram *this = (struct espress_stream_dgram *)arg;
 	if (NULL != this->recv_pbuf)
 	{
-		pbuf_free(this->recv_pbuf);
+		pbuf_free(p);
 	}
-	this->recv_pbuf = p;
-	memcpy(this->recv_ipaddr, addr, sizeof(*this->recv_ipaddr));
-	this->recv_port = port;
+	else
+	{
+		this->recv_pbuf = p;
+		memcpy(this->recv_ipaddr, addr, sizeof(*this->recv_ipaddr));
+		this->recv_port = port;
+	}
 }
 
 static err_t _udp_recvfrom(struct espress_stream_dgram *this, b_t *data, u_t *data_size, ip_addr_t *address, u16_t *port)

@@ -123,7 +123,7 @@ static ssize_t write(int fd, void const *buf, size_t count)
 
 #	if IS_CON_HWSERIAL
 		if (0 < count) {
-			uart_putc(UART_ID, ((char *)buf)[0]);
+			uart_putc_raw(UART_ID, ((char *)buf)[0]);
 		}
 		ret = 1;
 #	else
