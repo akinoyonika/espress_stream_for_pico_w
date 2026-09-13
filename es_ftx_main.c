@@ -5,6 +5,7 @@
 #include "pico/cyw43_arch.h"
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
+#include "hardware/clocks.h"
 
 #include "espress_stream/api.h"
 #include "cipher_api.h"
@@ -804,7 +805,11 @@ int main()
 {
 	int ret = 0;
 	unsigned u;
+#	define CLOCK_MHZ (250)
+	set_sys_clock_khz(CLOCK_MHZ * 1000, true);
+	clock_configure(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, CLOCK_MHZ * MHZ, CLOCK_MHZ * MHZ);
 	stdio_init_all();
+	sleep_ms(2000);
 	if (cyw43_arch_init()) {
 		printf("Wi-fi initialization failure.\n");
 		ret = 1;

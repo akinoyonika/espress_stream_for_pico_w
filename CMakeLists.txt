@@ -19,6 +19,10 @@ set(OPTIONS
 	-Wall
 )
 
+set(DEFINITIONS
+	CYW43_PIO_CLOCK_DIV_DYNAMIC=1
+)
+
 set(INCLUDES
 	espress_stream/api/include
 	cipher/include
@@ -52,6 +56,7 @@ endforeach()
 
 add_executable(test ${TEST_SOURCES})
 target_compile_options(test PRIVATE ${OPTIONS})
+target_compile_definitions(test PRIVATE ${DEFINITIONS})
 target_include_directories(test PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${INCLUDES})
 target_link_libraries(test ${LIBRARIES})
 
@@ -64,6 +69,7 @@ pico_add_extra_outputs(test)
 
 add_executable(es_ftx ${ES_FTX_SOURCES})
 target_compile_options(es_ftx PRIVATE ${OPTIONS})
+target_compile_definitions(es_ftx PRIVATE ${DEFINITIONS})
 target_include_directories(es_ftx PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${INCLUDES})
 target_link_libraries(es_ftx ${LIBRARIES})
 
@@ -76,6 +82,7 @@ pico_add_extra_outputs(es_ftx)
 
 add_executable(es_ccat ${ES_CCAT_SOURCES})
 target_compile_options(es_ccat PRIVATE ${OPTIONS})
+target_compile_definitions(es_ccat PRIVATE ${DEFINITIONS})
 target_include_directories(es_ccat PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${INCLUDES})
 target_link_libraries(es_ccat ${LIBRARIES})
 

@@ -6,6 +6,7 @@
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
 #include "tusb.h"
+#include "hardware/clocks.h"
 
 #include "espress_stream/api.h"
 #include "cipher_api.h"
@@ -616,6 +617,9 @@ int main()
 {
 	int ret = 0;
 	unsigned u;
+#	define CLOCK_MHZ (250)
+	set_sys_clock_khz(CLOCK_MHZ * 1000, true);
+	clock_configure(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, CLOCK_MHZ * MHZ, CLOCK_MHZ * MHZ);
 	stdio_init_all();
 #	if IS_CON_HWSERIAL
 		uart_init(UART_ID, UART_BOUD_RATE);
@@ -626,6 +630,11 @@ int main()
 		uart_set_hw_flow(UART_ID, true, true); 
 		uart_set_format(UART_ID, 8, 1, UART_PARITY_NONE);
 		uart_set_fifo_enabled(UART_ID, true);
+		for (u = espress_stream_time() ; ((espress_stream_time() - u) & 0xffffffff) < 2000000 ; ) {
+			if (uart_is_readable(UART_ID)) (void)uart_getc(UART_ID);
+		}
+#	else
+		sleep_ms(2000);
 #	endif
 	if (cyw43_arch_init()) {
 		printf("Wi-fi initialization failure.\n");
