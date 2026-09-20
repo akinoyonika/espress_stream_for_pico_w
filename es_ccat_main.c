@@ -65,18 +65,15 @@ static ssize_t read(int fd, void *buf, size_t count)
 		goto EXIT;
 	}
 
-	if (available < count) {
-		count = available;
-	}
-
 #	if IS_CON_HWSERIAL
-		if (0 < count) {
-			((char *)buf)[0] = uart_getc(UART_ID);
-			ret = 1;
-		} else {
-			ret = 0;
+		for (ret = 0 ; uart_is_readable(UART_ID) && (0 < count) ; ret++, count--) {
+			((char *)buf)[ret] = uart_getc(UART_ID);
 		}
 #	else
+		if (available < count) {
+			count = available;
+		}
+
 		ret = tud_cdc_read(buf, count);
 #	endif
 
@@ -118,16 +115,15 @@ static ssize_t write(int fd, void const *buf, size_t count)
 		goto EXIT;
 	}
 
-	if (available < count) {
-		count = available;
-	}
-
 #	if IS_CON_HWSERIAL
-		if (0 < count) {
-			uart_putc_raw(UART_ID, ((char *)buf)[0]);
+		for (ret = 0 ; uart_is_writable(UART_ID) && (0 < count) ; ret++, count--) {
+			uart_putc_raw(UART_ID, ((char *)buf)[ret]);
 		}
-		ret = 1;
 #	else
+		if (available < count) {
+			count = available;
+		}
+
 		ret = tud_cdc_write(buf, count);
 #	endif
 
