@@ -30,6 +30,7 @@
 !*.c
 !CMakeLists.txt
 !README.md
+!LICENSE
 !pico_sdk_import.cmake
 !espress_stream_import.sh
 net_config.h

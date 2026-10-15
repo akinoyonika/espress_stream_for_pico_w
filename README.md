@@ -1,6 +1,6 @@
 # Raspberry Pi Pico W用espress_stream
 
-<div style="text-align:right">2026年9月20日</div>
+<div style="text-align:right">2026年10月15日</div>
 
 ## 概要
 
@@ -22,9 +22,14 @@ linux用とは以下のような違いがあります。
 
 本ソフトウェアはソースパッケージにて提供しています。以下をダウンロードしてください。
 
-- [espress_stream_for_pico_w.20260920.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20260920.tar.gz)
+- [espress_stream_for_pico_w.20261015.tar.gz](http://akino-yo.f5.si/akinoyonika/espress_stream_for_pico_w/espress_stream_for_pico_w.20261015.tar.gz)
 
 <details><summary>変更履歴</summary>
+
+espress_stream_for_pico_w.20261015.tar.gz (1.12-1)
+: <ul>
+    <li>パッケージにLICENSEファイルを追加した。</li>
+  </ul>
 
 espress_stream_for_pico_w.20260920.tar.gz (1.12-1)
 : <ul>
@@ -276,7 +281,7 @@ UDPを使うため、<tt>pico_cyw43_arch_lwip_threadsafe_background</tt>をラ�
 
 MITライセンスに基づいてリリースされています。
 
-<details><summary>Copyright 2023 akinoyonika</summary>
+<details><summary>Copyright (c) 2023 akinoyonika</summary>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
